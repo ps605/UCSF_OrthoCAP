@@ -217,9 +217,31 @@ cap.release()
 #out_vid.release()
 cv2.destroyAllWindows()
 
+# Plot the x data
+fig1 = plt
+
+fig1.scatter(x=keypoint_data_y[11,:]*256, y=keypoint_data_x[11,:]*-256, c=keypoint_data_t, cmap='jet', s=10, alpha=1)
+fig1.scatter(x=keypoint_data_y[12,:]*256, y=keypoint_data_x[12,:]*-256, c=keypoint_data_t, cmap='jet', s=10, alpha=1)
+
+
+fig1.scatter(x=keypoint_data_y[13,:]*256, y=keypoint_data_x[13,:]*-256, c=keypoint_data_t, cmap='jet', s=10, alpha=1)
+fig1.scatter(x=keypoint_data_y[14,:]*256, y=keypoint_data_x[14,:]*-256, c=keypoint_data_t, cmap='jet', s=10, alpha=1)
+
+fig1.scatter(x=keypoint_data_y[15,:]*256, y=keypoint_data_x[15,:]*-256, c=keypoint_data_t, cmap='jet', s=10, alpha=1)
+fig1.scatter(x=keypoint_data_y[16,:]*256, y=keypoint_data_x[16,:]*-256, c=keypoint_data_t, cmap='jet', s=10, alpha=1)
+
+fig1.title('Lower joints')
+fig1.xlim(0,256)
+fig1.ylim(-256, 0)
+fig1.colorbar(label='Frame', orientation='vertical')
+
+#axs[0,1].plot(keypoint_data_x[12,:])
+
+
+
 # Save out data as .csv files
 out_headers = pd.DataFrame(np.transpose(keypoint_names))
-out_headers.to_csv((video_name + '_tracked_headers'))
+out_headers.to_csv((video_name + '_tracked_headers.csv'))
 
 out_x = pd.DataFrame(np.transpose(keypoint_data_x))
 out_x.to_csv((video_name + '_tracked_x.csv'))
