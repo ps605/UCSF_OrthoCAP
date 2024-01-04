@@ -7,7 +7,7 @@ from typing import Tuple
 
 # Parameters and flags
 confidence_threshold = 0.3
-video_name = 'Nick_1223_trial1_ROM'
+video_name = 'Nick_1223_trial1_STS'
 EDGES = {
     (0, 1): 'm',
     (0, 2): 'c',
@@ -75,12 +75,13 @@ def draw_connections(frame, keypoints, edges, confidence_threshold):
         if (c1 > confidence_threshold) & (c2 > confidence_threshold):      
             cv2.line(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0,0,255), 4)
 
-def draw_keypoints_cor(frame, keypoints, confidence_threshold):
+def draw_keypoints_cor(frame, keypoints_with_scores, confidence_threshold):
     y, x, c = frame.shape
     
     lamda = 100/56.25
     beta = -lamda*0.21875
-    ç   
+    
+    kp = np.squeeze(keypoints_with_scores)
     kp_y_scale_offset = 0 #kp[:,0]*0.25 - 0.125
     kp_x_scale_offset = kp[:,1]*lamda + beta
 
@@ -96,11 +97,12 @@ def draw_keypoints_cor(frame, keypoints, confidence_threshold):
         if kp_conf > confidence_threshold:
             cv2.circle(frame, (int(kx), int(ky)), 4, (0,255,0), -1)
 
-def draw_connections_cor(frame, keypoints, edges, confidence_threshold):
+def draw_connections_cor(frame, keypoints_with_scores, edges, confidence_threshold):
     y, x, c = frame.shape
     
     lamda = 100/56.25
     beta = -lamda*0.21875
+
     kp = np.squeeze(keypoints_with_scores)
     kp_y_scale_offset = 0 #kp[:,0]*0.25 - 0.125
     kp_x_scale_offset = kp[:,1]*lamda + beta
@@ -146,15 +148,27 @@ def resizeWithPad(image: np.array,
     return image
 
 out_vid = cv2.VideoWriter((video_name + '_tracked.mov'), cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 30, (1080, 1920))
+
 # Image handling and pose detection
-cap = cv2.VideoCapture(('./video_data/' +  video_name + '.mov')) #
-i_frame = 0
+cap = cv2.VideoCapture(('./video_data/' +  video_name + '.mov')) 
+
 n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-keypoint_data = np.zeros((n_frames, 52))
+
+# Initialise variables 
+i_frame = 0
+keypoint_data_x = np.zeros((17, n_frames))
+keypoint_data_y = np.zeros((17, n_frames))
+keypoint_data_c = np.zeros((17, n_frames))
+keypoint_data_t = np.zeros((n_frames,1))
 
 while cap.isOpened():
    
+    # Read frame
     ret, frame = cap.read()
+    
+    # Exit if no frame returned (workaround for capture open afer final frame)
+    if frame == None:
+        break
     
     # Mirror image
     frame = cv2.flip(frame,1)
@@ -172,22 +186,23 @@ while cap.isOpened():
     kp = np.squeeze(keypoints_with_scores)
 
     
-    # Create matrix to save out keypoints 
+    # Create arrays to save out keypoints 
     # Pass frame number
-    keypoint_data[i_frame,0] = i_frame
+    keypoint_data_t[i_frame,0] = i_frame
     # Pass x values
-    keypoint_data[i_frame,1::2] = np.transpose(kp[:,0])
-   
-   
-   
+    keypoint_data_x[:,i_frame] = np.transpose(kp[:,0])
+    # Pass y values
+    keypoint_data_y[:,i_frame] = np.transpose(kp[:,1])
+    # Pass confidence values
+    keypoint_data_c[:,i_frame] = np.transpose(kp[:,2])
+    
     # Render keypoints 
     draw_connections_cor(frame, keypoints_with_scores, EDGES, confidence_threshold)
     draw_keypoints_cor(frame, keypoints_with_scores, confidence_threshold)
 
-    out_vid.write(frame)
+    #out_vid.write(frame)
     cv2.imshow('Movenet Single Pose', frame)
-    
-      
+          
     #draw_connections(image, keypoints_with_scores, EDGES, confidence_threshold)
     #draw_keypoints(image, keypoints_with_scores, confidence_threshold)
     
@@ -198,5 +213,7 @@ while cap.isOpened():
         break
     
 cap.release()
-out_vid.release()
+#out_vid.release()
 cv2.destroyAllWindows()
+
+# Save out data as .txt files
