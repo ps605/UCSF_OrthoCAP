@@ -1,6 +1,7 @@
 import tensorflow as tf
 import tensorflow_hub as hub
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 import cv2
 from typing import Tuple
@@ -167,9 +168,9 @@ while cap.isOpened():
     ret, frame = cap.read()
     
     # Exit if no frame returned (workaround for capture open afer final frame)
-    if frame == None:
+    if frame is None:
         break
-    
+
     # Mirror image
     frame = cv2.flip(frame,1)
 
@@ -216,4 +217,18 @@ cap.release()
 #out_vid.release()
 cv2.destroyAllWindows()
 
-# Save out data as .txt files
+# Save out data as .csv files
+out_headers = pd.DataFrame(np.transpose(keypoint_names))
+out_headers.to_csv((video_name + '_tracked_headers'))
+
+out_x = pd.DataFrame(np.transpose(keypoint_data_x))
+out_x.to_csv((video_name + '_tracked_x.csv'))
+
+out_y = pd.DataFrame(np.transpose(keypoint_data_y))
+out_y.to_csv((video_name + '_tracked_y.csv'))
+
+out_c = pd.DataFrame(np.transpose(keypoint_data_c))
+out_c.to_csv((video_name + '_tracked_c.csv'))
+
+out_t = pd.DataFrame(np.transpose(keypoint_data_t))
+out_t.to_csv((video_name + '_tracked_t.csv'))
