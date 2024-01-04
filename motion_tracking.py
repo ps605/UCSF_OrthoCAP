@@ -217,16 +217,18 @@ cap.release()
 #out_vid.release()
 cv2.destroyAllWindows()
 
-# Plot the x data
+# Plot the x vs y vs frame data
 fig1 = plt
 
-for i_kp in keypoint_names:
+for i_kp in range(11, len(keypoint_names)):
     fig1.scatter(x=keypoint_data_y[i_kp,:]*256, y=keypoint_data_x[i_kp,:]*-256, c=keypoint_data_t, cmap='jet', s=10, alpha=1)
-    
-    fig1.title('Lower joints')
-    fig1.xlim(0,256)
-    fig1.ylim(-256, 0)
-    fig1.colorbar(label='Frame', orientation='vertical')
+
+fig1.title('Joints')
+fig1.xlabel('Pixel (#)')
+fig1.ylabel('Pixel (#)')
+fig1.xlim(0,256)
+fig1.ylim(-256, 0)
+fig1.colorbar(label='Frame Number', orientation='vertical')
 
 #axs[0,1].plot(keypoint_data_x[12,:])
 
