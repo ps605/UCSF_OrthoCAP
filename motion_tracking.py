@@ -220,20 +220,13 @@ cv2.destroyAllWindows()
 # Plot the x data
 fig1 = plt
 
-fig1.scatter(x=keypoint_data_y[11,:]*256, y=keypoint_data_x[11,:]*-256, c=keypoint_data_t, cmap='jet', s=10, alpha=1)
-fig1.scatter(x=keypoint_data_y[12,:]*256, y=keypoint_data_x[12,:]*-256, c=keypoint_data_t, cmap='jet', s=10, alpha=1)
-
-
-fig1.scatter(x=keypoint_data_y[13,:]*256, y=keypoint_data_x[13,:]*-256, c=keypoint_data_t, cmap='jet', s=10, alpha=1)
-fig1.scatter(x=keypoint_data_y[14,:]*256, y=keypoint_data_x[14,:]*-256, c=keypoint_data_t, cmap='jet', s=10, alpha=1)
-
-fig1.scatter(x=keypoint_data_y[15,:]*256, y=keypoint_data_x[15,:]*-256, c=keypoint_data_t, cmap='jet', s=10, alpha=1)
-fig1.scatter(x=keypoint_data_y[16,:]*256, y=keypoint_data_x[16,:]*-256, c=keypoint_data_t, cmap='jet', s=10, alpha=1)
-
-fig1.title('Lower joints')
-fig1.xlim(0,256)
-fig1.ylim(-256, 0)
-fig1.colorbar(label='Frame', orientation='vertical')
+for i_kp in keypoint_names:
+    fig1.scatter(x=keypoint_data_y[i_kp,:]*256, y=keypoint_data_x[i_kp,:]*-256, c=keypoint_data_t, cmap='jet', s=10, alpha=1)
+    
+    fig1.title('Lower joints')
+    fig1.xlim(0,256)
+    fig1.ylim(-256, 0)
+    fig1.colorbar(label='Frame', orientation='vertical')
 
 #axs[0,1].plot(keypoint_data_x[12,:])
 
