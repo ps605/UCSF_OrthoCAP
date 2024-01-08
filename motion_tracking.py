@@ -8,7 +8,7 @@ from typing import Tuple
 
 # Parameters and flags
 confidence_threshold = 0.3
-video_name = 'center_trim'
+video_name = 'right_trim'
 EDGES = {
     (0, 1): 'm',
     (0, 2): 'c',
@@ -148,7 +148,7 @@ def resizeWithPad(image: np.array,
     image = cv2.copyMakeBorder(image, top, bottom, left, right, cv2.BORDER_CONSTANT, value=padding_color)
     return image
 
-out_vid = cv2.VideoWriter((video_name + '_tracked.mp4'), cv2.VideoWriter_fourcc('M', 'P', 'G', '4'), 30, (720, 1280))
+#out_vid = cv2.VideoWriter((video_name + '_tracked.mp4'), cv2.VideoWriter_fourcc('M', 'P', 'G', '4'), 30, (720, 1280))
 
 # Image handling and pose detection
 cap = cv2.VideoCapture(('./video_data/' +  video_name + '.mp4')) 
@@ -201,20 +201,20 @@ while cap.isOpened():
     draw_connections_cor(frame, keypoints_with_scores, EDGES, confidence_threshold)
     draw_keypoints_cor(frame, keypoints_with_scores, confidence_threshold)
 
-    out_vid.write(frame)
-    cv2.imshow('Movenet Single Pose', frame)
+    #out_vid.write(frame)
+    #cv2.imshow('Movenet Single Pose', frame)
           
     #draw_connections(image, keypoints_with_scores, EDGES, confidence_threshold)
     #draw_keypoints(image, keypoints_with_scores, confidence_threshold)
     
-    #cv2.imshow("Padded image", image)
+    cv2.imshow("Padded image", image)
     i_frame = i_frame + 1 
     
     if cv2.waitKey(10) & 0xFF==ord('q'):
         break
     
 cap.release()
-out_vid.release()
+#out_vid.release()
 cv2.destroyAllWindows()
 
 # Plot the x vs y vs frame data
@@ -231,10 +231,6 @@ fig1.ylim(-256, 0)
 fig1.colorbar(label='Frame Number', orientation='vertical')
 
 fig1.savefig('./Out/Figures/' + video_name + '_joint_xyvst.png')
-
-#axs[0,1].plot(keypoint_data_x[12,:])
-
-
 
 # Save out data as .csv files
 out_headers = pd.DataFrame(np.transpose(keypoint_names))
