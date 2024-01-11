@@ -9,6 +9,7 @@ from typing import Tuple
 # Parameters and flags
 confidence_threshold = 0.3
 video_name = 'right_trim'
+
 EDGES = {
     (0, 1): 'm',
     (0, 2): 'c',
