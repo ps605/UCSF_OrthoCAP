@@ -73,6 +73,15 @@ cap = cv2.VideoCapture(('./video_data/' +  video_name + '.mp4'))
 
 n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
+
+# Initialise variables 
+i_frame = 0
+keypoint_data_x = np.zeros((30, n_frames))
+keypoint_data_y = np.zeros((30, n_frames))
+keypoint_data_z = np.zeros((30, n_frames))
+keypoint_data_c = np.zeros((30, n_frames))
+keypoint_data_t = np.zeros((n_frames,1))
+
 while cap.isOpened():
    
     # Read frame
@@ -93,7 +102,18 @@ while cap.isOpened():
     pred = model.detect_poses(img, skeleton='smpl+head_30')
     pred['poses3d'].shape
 
-    plot_results(img, pred, joint_names, joint_edges)
+    poses3d = pred['poses3d'].numpy()
+    # Create arrays to save out keypoints 
+    # Pass frame number
+    keypoint_data_t[i_frame,0] = i_frame
+    # Pass x values
+    keypoint_data_x[:,i_frame] = poses3d[0,:,0]
+    # Pass y values
+    keypoint_data_y[:,i_frame] = poses3d[0,:,1]
+    # Pass confidence values
+    keypoint_data_z[:,i_frame] = poses3d[0,:,2]
+
+    #plot_results(img, pred, joint_names, joint_edges)
     
         
     if cv2.waitKey(10) & 0xFF==ord('q'):
