@@ -115,12 +115,33 @@ while cap.isOpened():
 
     #plot_results(img, pred, joint_names, joint_edges)
     
-        
+    i_frame = i_frame + 1     
     if cv2.waitKey(10) & 0xFF==ord('q'):
         break
     
 cap.release()
 #out_vid.release()
 cv2.destroyAllWindows()
+
+pose_x = np.transpose(keypoint_data_x)
+pose_y = np.transpose(keypoint_data_z)
+pose_z = np.transpose(-keypoint_data_y)
+
+
+pose_ax = plt.axes( projection='3d')
+pose_ax.set_xlim3d(-1500, 1500)
+pose_ax.set_ylim3d(2000, 5000)
+pose_ax.set_zlim3d(-1500, 1500)
+
+pose_ax.set_xlabel('X')
+pose_ax.set_ylabel('Y')
+pose_ax.set_zlabel('Z')
+
+pose = pose_ax.scatter(pose_x[0,:], pose_y[0,:], pose_z[0,:])
+
+for i in range(n_frames):
+    pose.set_xdata(pose_x[i,:])
+    pose.set_ydata(pose_y[i,:])
+    pose.set_zdata(pose_z[i,:])
 
 print('done')
