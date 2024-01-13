@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import Rectangle
+import pandas as pd
 
 def resizeWithPad(image: np.array, 
     new_shape: Tuple[int, int], 
@@ -58,7 +59,7 @@ def plot_results(image, pred, joint_names, joint_edges):
    #     #image_ax.scatter(*pose2d.T, s=2)
    #     pose_ax.scatter(*pose3d.T, s=2)
 
-video_name = 'right_trim'
+video_name = 'Nick_1223_trial1_ROM'
 
 model = hub.load('/Users/orthocap_01/Documents/Research/UCSF/Development/Motion_Tracking/metrabs_eff2l_y4_384px_800k_28ds')  # Takes about 3 minutes
 #! wget -q https://istvansarandi.com/eccv22_demo/test.jpg
@@ -69,7 +70,7 @@ joint_names = model.per_skeleton_joint_names['smpl+head_30'].numpy().astype(str)
 joint_edges = model.per_skeleton_joint_edges['smpl+head_30'].numpy()
 
 # Image handling and pose detection
-cap = cv2.VideoCapture(('./video_data/' +  video_name + '.mp4')) 
+cap = cv2.VideoCapture(('./video_data/' +  video_name + '.mov')) 
 
 n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
@@ -103,6 +104,9 @@ while cap.isOpened():
     pred['poses3d'].shape
 
     poses3d = pred['poses3d'].numpy()
+    # Check if no detection then skip loop
+    if poses3d.size == 0:
+        continue
     # Create arrays to save out keypoints 
     # Pass frame number
     keypoint_data_t[i_frame,0] = i_frame
@@ -127,6 +131,14 @@ pose_x = np.transpose(keypoint_data_x)
 pose_y = np.transpose(keypoint_data_z)
 pose_z = np.transpose(-keypoint_data_y)
 
+out_x = pd.DataFrame(pose_x)
+out_x.to_csv(('./Out/Data/' + video_name + '_3Dtracked_x.csv'))
+
+out_y = pd.DataFrame(pose_y)
+out_y.to_csv(('./Out/Data/' + video_name + '_3Dtracked_y.csv'))
+
+out_z = pd.DataFrame(pose_z)
+out_z.to_csv(('./Out/Data/' + video_name + '_3Dtracked_z.csv'))
 
 pose_ax = plt.axes( projection='3d')
 pose_ax.set_xlim3d(-1500, 1500)
