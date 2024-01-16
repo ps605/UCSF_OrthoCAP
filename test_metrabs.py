@@ -59,7 +59,7 @@ def plot_results(image, pred, joint_names, joint_edges):
    #     #image_ax.scatter(*pose2d.T, s=2)
    #     pose_ax.scatter(*pose3d.T, s=2)
 
-video_name = 'Nick_1223_trial1_ROM'
+video_name = 'center_trim'
 
 model = hub.load('/Users/orthocap_01/Documents/Research/UCSF/Development/Motion_Tracking/metrabs_eff2l_y4_384px_800k_28ds')  # Takes about 3 minutes
 #! wget -q https://istvansarandi.com/eccv22_demo/test.jpg
@@ -70,7 +70,7 @@ joint_names = model.per_skeleton_joint_names['smpl+head_30'].numpy().astype(str)
 joint_edges = model.per_skeleton_joint_edges['smpl+head_30'].numpy()
 
 # Image handling and pose detection
-cap = cv2.VideoCapture(('./video_data/' +  video_name + '.mov')) 
+cap = cv2.VideoCapture(('./video_data/' +  video_name + '.mp4')) 
 
 n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
@@ -139,21 +139,5 @@ out_y.to_csv(('./Out/Data/' + video_name + '_3Dtracked_y.csv'))
 
 out_z = pd.DataFrame(pose_z)
 out_z.to_csv(('./Out/Data/' + video_name + '_3Dtracked_z.csv'))
-
-pose_ax = plt.axes( projection='3d')
-pose_ax.set_xlim3d(-1500, 1500)
-pose_ax.set_ylim3d(2000, 5000)
-pose_ax.set_zlim3d(-1500, 1500)
-
-pose_ax.set_xlabel('X')
-pose_ax.set_ylabel('Y')
-pose_ax.set_zlabel('Z')
-
-pose = pose_ax.scatter(pose_x[0,:], pose_y[0,:], pose_z[0,:])
-
-for i in range(n_frames):
-    pose.set_xdata(pose_x[i,:])
-    pose.set_ydata(pose_y[i,:])
-    pose.set_zdata(pose_z[i,:])
 
 print('done')
