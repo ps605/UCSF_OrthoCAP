@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.cm as cm
 
-trial_name = 'Nick_1223_trial1_ROM'
+trial_name = 'right_trim'
 
 # Load in tracked joint data from 3D pose and pass to array (XYZ)
 data_x = pd.read_csv('./Out/Data/' + trial_name + '_3Dtracked_x_no_headers.csv')
@@ -32,8 +32,8 @@ def update(i):
     ax.cla()
 
     x = pose_x[i, :]
-    y = pose_y[i, :]
-    z = pose_z[i, :]
+    y = pose_z[i, :]
+    z = -pose_y[i, :]
 
     X.append(x[track_marker_idx])
     Y.append(y[track_marker_idx])
