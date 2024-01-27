@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import csv
 
-file_name = 'center_trim_3Dtracked'
+file_name = 'right_trim_3Dtracked'
 
 
 x_data = pd.read_csv('./Out/Data/' + file_name + '_x.csv', header=None)

@@ -13,6 +13,7 @@ Created on Thu Sep 14 09:06:58 2023
 
 import numpy as np
 import pandas as pd
+from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
 from scipy.spatial import procrustes
 from sklearn.preprocessing import StandardScaler
@@ -101,7 +102,7 @@ def organize_pc_values(pca_data_average): #organize so X,Y,Z (3D) for each joint
 
     for patient_id, _, _, pc_values in pca_data_average:
         num_time_points = pc_values.shape[0]
-        pc_values_reshaped = pc_values.reshape(num_time_points, 11, 3)
+        pc_values_reshaped = pc_values.reshape(num_time_points, 30, 3)
         organized_pc_values.append((patient_id, pc_values_reshaped))
 
     return organized_pc_values
@@ -144,7 +145,7 @@ def perform_gpa(organized_pc_values):
     for patient_index in range(len(organized_pc_values)):
         transformation, aligned_pca_data, _= procrustes(mean_data, first_slices[patient_index])
         transformation_matrix=transformation
-        transformation_matrix = np.array(transformation_matrix).reshape(11, 3)
+        transformation_matrix = np.array(transformation_matrix).reshape(30, 3)
         aligned_pca_data_t0.append(aligned_pca_data)
         transformation_matrices.append(transformation_matrix)
         
@@ -175,10 +176,10 @@ def organize_aligned_pca_values(total_aligned_pca_data, pca_data):
 
         # Reshape the aligned PCA weights to (200, 33) matrix as required
         num_time_points = aligned_pca_data.shape[0]
-        aligned_pca_data_reshaped = np.empty((num_time_points, 33))
+        aligned_pca_data_reshaped = np.empty((num_time_points, 90))
 
         # Iterate over the 11 joints and fill the aligned_pca_weights_reshaped matrix
-        for joint_index in range(11):
+        for joint_index in range(30):
             start_col = joint_index * 3
             end_col = start_col + 3
             aligned_pca_data_reshaped[:, start_col:end_col] = aligned_pca_data[:, joint_index, :]
@@ -273,7 +274,7 @@ def calculate_k_scores(k_profile, control_mean, data):
     mean_control_length=np.mean(control_length)
 
 #this is to incorporate the time component into the score (how fast is a participant performing activity)
-    for patient_id, ka_value in k_profile:
+    for patient_id, k_score in k_profile:
         for patient_id1, df, num_rows_per_activity in data:
             if patient_id1 == patient_id:
                 patient_num_rows = num_rows_per_activity
@@ -292,7 +293,7 @@ def calculate_k_scores(k_profile, control_mean, data):
         total_k_score = (6.5* np.sum(np.abs(k_score - control_mean)) * time_component)/1000  
         total_k_score=100-total_k_score #change so 100 is ideal, smaller the worst
         total_k_scores.append((patient_id, total_k_score))
-    return total_k_scores
+    return (total_k_scores, k_score)
 
 
 def kdi_by_patient(total_kdi):
@@ -372,4 +373,9 @@ control_Contribution = [(patient_id, ka_value_torso,ka_value_legs) for patient_i
 LBP_Contribution = [(patient_id, ka_value_torso,ka_value_legs) for patient_id, ka_value_torso,ka_value_legs,_ in ka_contribution if patient_id.startswith("10")]
 k_profile, pc_test_score = calculate_kprofile(aligned_pca_data, datastandard)
 control_mean, control_std= calculate_mean(k_profile)
-total_kscore=calculate_k_scores(k_profile, control_mean, data)
+total_kscore, k_score =calculate_k_scores(k_profile, control_mean, data)
+
+plt.plot(np.arange(1,101,1), k_score)
+plt.xlabel('Normalised time (%)')
+plt.ylabel('K-Score')
+plt.savefig('./Out/Figures/' + csv_files[0][2:13] + '_k_score.png')
