@@ -102,7 +102,7 @@ def organize_pc_values(pca_data_average): #organize so X,Y,Z (3D) for each joint
 
     for patient_id, _, _, pc_values in pca_data_average:
         num_time_points = pc_values.shape[0]
-        pc_values_reshaped = pc_values.reshape(num_time_points, 30, 3)
+        pc_values_reshaped = pc_values.reshape(num_time_points, 33, 3)
         organized_pc_values.append((patient_id, pc_values_reshaped))
 
     return organized_pc_values
@@ -145,7 +145,7 @@ def perform_gpa(organized_pc_values):
     for patient_index in range(len(organized_pc_values)):
         transformation, aligned_pca_data, _= procrustes(mean_data, first_slices[patient_index])
         transformation_matrix=transformation
-        transformation_matrix = np.array(transformation_matrix).reshape(30, 3)
+        transformation_matrix = np.array(transformation_matrix).reshape(33, 3)
         aligned_pca_data_t0.append(aligned_pca_data)
         transformation_matrices.append(transformation_matrix)
         
@@ -176,10 +176,10 @@ def organize_aligned_pca_values(total_aligned_pca_data, pca_data):
 
         # Reshape the aligned PCA weights to (200, 33) matrix as required
         num_time_points = aligned_pca_data.shape[0]
-        aligned_pca_data_reshaped = np.empty((num_time_points, 90))
+        aligned_pca_data_reshaped = np.empty((num_time_points, 99))
 
         # Iterate over the 11 joints and fill the aligned_pca_weights_reshaped matrix
-        for joint_index in range(30):
+        for joint_index in range(33):
             start_col = joint_index * 3
             end_col = start_col + 3
             aligned_pca_data_reshaped[:, start_col:end_col] = aligned_pca_data[:, joint_index, :]
