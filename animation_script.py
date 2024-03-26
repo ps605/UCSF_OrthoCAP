@@ -145,7 +145,7 @@ for csv_file in csv_files:
                 rm_pelvis_mat = rm_pelvis.as_matrix()
                 # Get pelvis vectors for coordinate system plotting
                 pelvis_pos = [pose_x[i,idx_pelvis_q], pose_y[i,idx_pelvis_q], pose_z[i,idx_pelvis_q]]
-                pelvis_rf_pnts = rm_pelvis_mat*100 + pelvis_pos
+                pelvis_rf_pnts = np.transpose(rm_pelvis_mat)*100 + pelvis_pos
 
                 # Plot pelvis coordinate system
                 ax.plot([pelvis_pos[0],pelvis_rf_pnts[0,0]], [pelvis_pos[1],pelvis_rf_pnts[0,1]], [pelvis_pos[2],pelvis_rf_pnts[0,2]],color = 'green')
