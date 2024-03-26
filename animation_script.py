@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from scipy.spatial.transform import Rotation as R
 import numpy as np
 import matplotlib.animation as animation
 import csv
@@ -21,7 +22,9 @@ csv_files = os.listdir(data_path)
 
 for csv_file in csv_files:
     if csv_file.endswith('pos.csv'):
-        trial_name = data_path + csv_file #'IMU_Segment_pos_xyz'
+
+        # Get base trial name
+        trial_name = data_path + csv_file[:-8] #'IMU_Segment_pos_xyz'
 
         # Load in tracked joint data from 3D pose and pass to array (XYZ)
         if flag_seperateXYZ == True:
@@ -32,7 +35,9 @@ for csv_file in csv_files:
             data_z = pd.read_csv('./Out/Data/' + trial_name + '_3Dtracked_z_no_headers.csv')
             pose_z = np.array(data_z, dtype='float')
         else:
-            data_xyz = pd.read_csv(trial_name)
+
+            # Get position
+            data_xyz = pd.read_csv(trial_name + '_pos.csv')
             data_xyz = data_xyz.drop(columns='Frame')
             # TO np.array and into mm
             pose_xyz = np.array(data_xyz, dtype='float')*1000
@@ -50,6 +55,34 @@ for csv_file in csv_files:
             z_min = np.min(pose_z)
             z_max = np.max(pose_z)
 
+            # Get quaternion .csv     
+            # Load in tracked joint data from 3D orientation and pass to array (quaternions)    
+            data_q0123 = pd.read_csv(trial_name + '_qua.csv')  
+            data_q0123 = data_q0123.drop(columns='Frame')      
+
+            # Get indeces of Pelvis and L/R Shoulders
+            idx_pelvis_q = int(data_q0123.columns.get_loc('Pelvis q0')/4)
+            idx_shld_r_q = int(data_q0123.columns.get_loc('Right Shoulder q0')/4)
+            idx_shld_l_q = int(data_q0123.columns.get_loc('Left Shoulder q0')/4)
+
+            # To np.array quaternion
+            ori_quat = np.array(data_q0123, dtype='float')
+
+            # split data into q0, q1, q2, q3
+            # MVN uses Scalar First for quaternion and SciPy uses Scalar Last for quaternion
+            ori_q0 = ori_quat[:,0::4]                       
+            ori_q1 = ori_quat[:,1::4] 
+            ori_q2 = ori_quat[:,2::4]
+            ori_q3 = ori_quat[:,3::4]
+
+            # Check both position and quat have the same frames        
+            n_frames_pos, n_cols_pos = np.shape(data_xyz)
+            n_frames_quat, n_cols_quat = np.shape(data_q0123)
+
+            if n_frames_pos == n_frames_quat:
+                n_frames = n_frames_pos
+            else:
+                n_frames = np.min([n_frames_pos, n_frames_quat])
 
         # Calculate delta(mid shoulder, pelvis)
         if flag_midShldrPevlis == True:
@@ -92,12 +125,27 @@ for csv_file in csv_files:
             def update(i):
                 ax.cla()
 
+                # Update position of segments
                 x = pose_x[i, :]
                 y = pose_y[i, :]
                 z = pose_z[i, :]
 
                 ax.scatter(x, y, z, c = 'red', s = 14, marker = 'o')
-                plt.text
+
+                # Orientation of pelvis in global from IMU quaternions
+                rm_pelvis = R.from_quat([ori_q1[i, idx_pelvis_q], ori_q2[i, idx_pelvis_q], ori_q3[i, idx_pelvis_q], ori_q0[i, idx_pelvis_q]])
+                # Get as rotation matrix to calculate vectors
+                rm_pelvis_mat = rm_pelvis.as_matrix()
+                # Get pelvis vectors for coordinate system plotting
+                pelvis_pos = [pose_x[i,idx_pelvis_q], pose_y[i,idx_pelvis_q], pose_z[i,idx_pelvis_q]]
+                pelvis_coords = rm_pelvis_mat*100 + pelvis_pos
+
+                # Plot pelvis coordinate system
+                ax.plot([pelvis_pos[0],pelvis_coords[0,0]], [pelvis_pos[1],pelvis_coords[0,1]], [pelvis_pos[2],pelvis_coords[0,2]],color = 'green')
+                ax.plot([pelvis_pos[0],pelvis_coords[1,0]], [pelvis_pos[1],pelvis_coords[1,1]], [pelvis_pos[2],pelvis_coords[1,2]],color = 'red')
+                ax.plot([pelvis_pos[0],pelvis_coords[2,0]], [pelvis_pos[1],pelvis_coords[2,1]], [pelvis_pos[2],pelvis_coords[2,2]],color = 'blue')
+                
+                
                 for i_joint in track_marker_idx:
                     X.append(x[i_joint])
                     Y.append(y[i_joint])
