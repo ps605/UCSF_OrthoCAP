@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation as R
-import numpy as np
+from numpy.linalg import linalg as la
 import matplotlib.animation as animation
 import csv
 import numpy as np
@@ -95,7 +95,7 @@ for csv_file in csv_files:
 
         n_frames, n_cols = np.shape(pose_xyz)
         frames_v = range(n_frames)
-      
+        ang_eul = np.zeros((n_frames,3))
 
         # plt.figure()
         # if flag_midShldrPevlis == True:
@@ -125,7 +125,12 @@ for csv_file in csv_files:
             def update(i):
                 ax.cla()
 
-                # Update position of segments
+                # Plot Global frame
+                ax.plot([0,200], [0,0], [0,0],color = 'green')
+                ax.plot([0,0], [0,200], [0,0],color = 'red')
+                ax.plot([0,0], [0,0], [0,200],color = 'blue')
+                
+                # Update position of segments points
                 x = pose_x[i, :]
                 y = pose_y[i, :]
                 z = pose_z[i, :]
@@ -134,16 +139,18 @@ for csv_file in csv_files:
 
                 # Orientation of pelvis in global from IMU quaternions
                 rm_pelvis = R.from_quat([ori_q1[i, idx_pelvis_q], ori_q2[i, idx_pelvis_q], ori_q3[i, idx_pelvis_q], ori_q0[i, idx_pelvis_q]])
+                ang_eul[i,:] = rm_pelvis.as_euler('xyz', degrees=True)
+                
                 # Get as rotation matrix to calculate vectors
                 rm_pelvis_mat = rm_pelvis.as_matrix()
                 # Get pelvis vectors for coordinate system plotting
                 pelvis_pos = [pose_x[i,idx_pelvis_q], pose_y[i,idx_pelvis_q], pose_z[i,idx_pelvis_q]]
-                pelvis_coords = rm_pelvis_mat*100 + pelvis_pos
+                pelvis_rf_pnts = rm_pelvis_mat*100 + pelvis_pos
 
                 # Plot pelvis coordinate system
-                ax.plot([pelvis_pos[0],pelvis_coords[0,0]], [pelvis_pos[1],pelvis_coords[0,1]], [pelvis_pos[2],pelvis_coords[0,2]],color = 'green')
-                ax.plot([pelvis_pos[0],pelvis_coords[1,0]], [pelvis_pos[1],pelvis_coords[1,1]], [pelvis_pos[2],pelvis_coords[1,2]],color = 'red')
-                ax.plot([pelvis_pos[0],pelvis_coords[2,0]], [pelvis_pos[1],pelvis_coords[2,1]], [pelvis_pos[2],pelvis_coords[2,2]],color = 'blue')
+                ax.plot([pelvis_pos[0],pelvis_rf_pnts[0,0]], [pelvis_pos[1],pelvis_rf_pnts[0,1]], [pelvis_pos[2],pelvis_rf_pnts[0,2]],color = 'green')
+                ax.plot([pelvis_pos[0],pelvis_rf_pnts[1,0]], [pelvis_pos[1],pelvis_rf_pnts[1,1]], [pelvis_pos[2],pelvis_rf_pnts[1,2]],color = 'red')
+                ax.plot([pelvis_pos[0],pelvis_rf_pnts[2,0]], [pelvis_pos[1],pelvis_rf_pnts[2,1]], [pelvis_pos[2],pelvis_rf_pnts[2,2]],color = 'blue')
                 
                 
                 for i_joint in track_marker_idx:
