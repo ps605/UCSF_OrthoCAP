@@ -12,7 +12,7 @@ import os
 plt.ioff()
 flag_seperateXYZ    = False
 flag_makeGIF        = True
-flag_midShldrPevlis = False
+flag_midShldrPevlis = True
 
 # Where to read data from
 data_path = '../Study_XSens_Ames/In/Box_data/'
@@ -36,11 +36,16 @@ for csv_file in csv_files:
             pose_z = np.array(data_z, dtype='float')
         else:
 
-            # Get position
+            # Get position .csv
             data_xyz = pd.read_csv(trial_name + '_pos.csv')
             data_xyz = data_xyz.drop(columns='Frame')
             # TO np.array and into mm
             pose_xyz = np.array(data_xyz, dtype='float')*1000
+
+            # Get indeces of Pelvis and L/R Shoulders (Upper Arm segment) for position
+            idx_pelvis_p = int(data_xyz.columns.get_loc('Pelvis x')/3)
+            idx_shld_r_p = int(data_xyz.columns.get_loc('Right Upper Arm x')/3)
+            idx_shld_l_p = int(data_xyz.columns.get_loc('Left Upper Arm x')/3)    
 
             # split data into X, Y, Z
             pose_x = pose_xyz[:,0::3]
@@ -60,10 +65,8 @@ for csv_file in csv_files:
             data_q0123 = pd.read_csv(trial_name + '_qua.csv')  
             data_q0123 = data_q0123.drop(columns='Frame')      
 
-            # Get indeces of Pelvis and L/R Shoulders
+            # Get indeces of Pelvis or quaterinion
             idx_pelvis_q = int(data_q0123.columns.get_loc('Pelvis q0')/4)
-            idx_shld_r_q = int(data_q0123.columns.get_loc('Right Shoulder q0')/4)
-            idx_shld_l_q = int(data_q0123.columns.get_loc('Left Shoulder q0')/4)
 
             # To np.array quaternion
             ori_quat = np.array(data_q0123, dtype='float')
@@ -87,11 +90,12 @@ for csv_file in csv_files:
         # Calculate delta(mid shoulder, pelvis)
         if flag_midShldrPevlis == True:
             # ! should find better way of indexing data with header info from .mvn
-            pelvis = pose_xyz[:,0:3]
-            shoulder_r = pose_xyz[:,21:24]
-            shoulder_l = pose_xyz[:,33:36]
+            pelvis = pose_xyz[:,idx_pelvis_p:idx_pelvis_p + 3]
+            shoulder_r = pose_xyz[:,idx_shld_r_p:idx_shld_r_p + 3]
+            shoulder_l = pose_xyz[:,idx_shld_l_p:idx_shld_l_p + 3]
+            midShoulder = np.mean(np.array([shoulder_r, shoulder_l]), axis=0)
             # Calculate vector between pelvis and mid shoulders (in global frame)
-            d_mShd2Pel = np.mean(np.array([shoulder_r, shoulder_l]), axis=0) - pelvis
+            d_mShd2Pel = midShoulder - pelvis
 
         n_frames, n_cols = np.shape(pose_xyz)
         frames_v = range(n_frames)
@@ -126,8 +130,8 @@ for csv_file in csv_files:
                 ax.cla()
 
                 # Plot Global frame
-                ax.plot([0,200], [0,0], [0,0],color = 'green')
-                ax.plot([0,0], [0,200], [0,0],color = 'red')
+                ax.plot([0,200], [0,0], [0,0],color = 'red')
+                ax.plot([0,0], [0,200], [0,0],color = 'green')
                 ax.plot([0,0], [0,0], [0,200],color = 'blue')
                 
                 # Update position of segments points
@@ -136,6 +140,7 @@ for csv_file in csv_files:
                 z = pose_z[i, :]
 
                 ax.scatter(x, y, z, c = 'red', s = 14, marker = 'o')
+                ax.scatter(midShoulder[i,0], midShoulder[i,1], midShoulder[i,2], c = 'green', s = 14, marker = 'o' )
 
                 # Orientation of pelvis in global from IMU quaternions
                 rm_pelvis = R.from_quat([ori_q1[i, idx_pelvis_q], ori_q2[i, idx_pelvis_q], ori_q3[i, idx_pelvis_q], ori_q0[i, idx_pelvis_q]])
@@ -148,8 +153,8 @@ for csv_file in csv_files:
                 pelvis_rf_pnts = np.transpose(rm_pelvis_mat)*100 + pelvis_pos
 
                 # Plot pelvis coordinate system
-                ax.plot([pelvis_pos[0],pelvis_rf_pnts[0,0]], [pelvis_pos[1],pelvis_rf_pnts[0,1]], [pelvis_pos[2],pelvis_rf_pnts[0,2]],color = 'green')
-                ax.plot([pelvis_pos[0],pelvis_rf_pnts[1,0]], [pelvis_pos[1],pelvis_rf_pnts[1,1]], [pelvis_pos[2],pelvis_rf_pnts[1,2]],color = 'red')
+                ax.plot([pelvis_pos[0],pelvis_rf_pnts[0,0]], [pelvis_pos[1],pelvis_rf_pnts[0,1]], [pelvis_pos[2],pelvis_rf_pnts[0,2]],color = 'red')
+                ax.plot([pelvis_pos[0],pelvis_rf_pnts[1,0]], [pelvis_pos[1],pelvis_rf_pnts[1,1]], [pelvis_pos[2],pelvis_rf_pnts[1,2]],color = 'green')
                 ax.plot([pelvis_pos[0],pelvis_rf_pnts[2,0]], [pelvis_pos[1],pelvis_rf_pnts[2,1]], [pelvis_pos[2],pelvis_rf_pnts[2,2]],color = 'blue')
                 
                 
