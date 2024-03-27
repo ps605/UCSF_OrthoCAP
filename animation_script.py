@@ -38,14 +38,24 @@ for csv_file in csv_files:
 
             # Get position .csv
             data_xyz = pd.read_csv(trial_name + '_pos.csv')
+            # Remove "Frame" column
             data_xyz = data_xyz.drop(columns='Frame')
-            # TO np.array and into mm
-            pose_xyz = np.array(data_xyz, dtype='float')*1000
+ 
+            # Remove "Shoulder" (blade) columns
+            data_xyz = data_xyz.drop(columns='Right Shoulder x')
+            data_xyz = data_xyz.drop(columns='Right Shoulder y')
+            data_xyz = data_xyz.drop(columns='Right Shoulder z')
+            data_xyz = data_xyz.drop(columns='Left Shoulder x')
+            data_xyz = data_xyz.drop(columns='Left Shoulder y')
+            data_xyz = data_xyz.drop(columns='Left Shoulder z')
 
             # Get indeces of Pelvis and L/R Shoulders (Upper Arm segment) for position
-            idx_pelvis_p = int(data_xyz.columns.get_loc('Pelvis x')/3)
-            idx_shld_r_p = int(data_xyz.columns.get_loc('Right Upper Arm x')/3)
-            idx_shld_l_p = int(data_xyz.columns.get_loc('Left Upper Arm x')/3)    
+            idx_pelvis_p = int(data_xyz.columns.get_loc('Pelvis x'))
+            idx_shld_r_p = int(data_xyz.columns.get_loc('Right Upper Arm x'))
+            idx_shld_l_p = int(data_xyz.columns.get_loc('Left Upper Arm x')) 
+
+            # TO np.array and into mm
+            pose_xyz = np.array(data_xyz, dtype='float')*1000
 
             # split data into X, Y, Z
             pose_x = pose_xyz[:,0::3]
@@ -66,7 +76,7 @@ for csv_file in csv_files:
             data_q0123 = data_q0123.drop(columns='Frame')      
 
             # Get indeces of Pelvis or quaterinion
-            idx_pelvis_q = int(data_q0123.columns.get_loc('Pelvis q0')/4)
+            idx_pelvis_q = int(data_q0123.columns.get_loc('Pelvis q0'))
 
             # To np.array quaternion
             ori_quat = np.array(data_q0123, dtype='float')
@@ -157,17 +167,12 @@ for csv_file in csv_files:
                 ax.plot([pelvis_pos[0],pelvis_rf_pnts[1,0]], [pelvis_pos[1],pelvis_rf_pnts[1,1]], [pelvis_pos[2],pelvis_rf_pnts[1,2]],color = 'green')
                 ax.plot([pelvis_pos[0],pelvis_rf_pnts[2,0]], [pelvis_pos[1],pelvis_rf_pnts[2,1]], [pelvis_pos[2],pelvis_rf_pnts[2,2]],color = 'blue')
                 
-                
                 for i_joint in track_marker_idx:
                     X.append(x[i_joint])
                     Y.append(y[i_joint])
                     Z.append(0)
                     ax.plot(X, Y, Z, c = colours[i_joint])      
 
-                # ax.set_xlim(0, 5500)
-                # ax.set_ylim(-1000, 1000)
-                # ax.set_zlim(-100, 2000)
-                
                 ax.set_title(['Frame Number: ' + str(i)])
                 ax.set_xlim(x_min + 0.1*x_min, x_max + 0.1*x_max)
                 ax.set_ylim(y_min + 0.1*y_min, y_max + 0.1*y_max)
