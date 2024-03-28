@@ -8,7 +8,7 @@ from typing import Tuple
 
 # Parameters and flags
 confidence_threshold = 0.3
-video_name = 'right_trim'
+video_name = 'IMG_0101'
 
 EDGES = {
     (0, 1): 'm',
@@ -149,10 +149,10 @@ def resizeWithPad(image: np.array,
     image = cv2.copyMakeBorder(image, top, bottom, left, right, cv2.BORDER_CONSTANT, value=padding_color)
     return image
 
-#out_vid = cv2.VideoWriter((video_name + '_tracked.mp4'), cv2.VideoWriter_fourcc('M', 'P', 'G', '4'), 30, (720, 1280))
-
 # Image handling and pose detection
 cap = cv2.VideoCapture(('./video_data/' +  video_name + '.mp4')) 
+out_vid = cv2.VideoWriter(('./video_data/' + video_name + '_tracked.avi'), cv2.VideoWriter_fourcc('M','J','P','G'), 30, (720, 1280))
+out_vid_256 = cv2.VideoWriter(('./video_data/' + video_name + '_256_tracked.avi'), cv2.VideoWriter_fourcc('M','J','P','G'), 30, (256, 256))
 
 n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
@@ -202,20 +202,23 @@ while cap.isOpened():
     draw_connections_cor(frame, keypoints_with_scores, EDGES, confidence_threshold)
     draw_keypoints_cor(frame, keypoints_with_scores, confidence_threshold)
 
-    #out_vid.write(frame)
-    #cv2.imshow('Movenet Single Pose', frame)
+    out_vid.write(frame)
+    cv2.imshow('Movenet Single Pose', frame)
           
-    #draw_connections(image, keypoints_with_scores, EDGES, confidence_threshold)
-    #draw_keypoints(image, keypoints_with_scores, confidence_threshold)
+    draw_connections(image, keypoints_with_scores, EDGES, confidence_threshold)
+    draw_keypoints(image, keypoints_with_scores, confidence_threshold)
     
+    out_vid_256.write(image)
     cv2.imshow("Padded image", image)
+
     i_frame = i_frame + 1 
     
     if cv2.waitKey(10) & 0xFF==ord('q'):
         break
     
 cap.release()
-#out_vid.release()
+out_vid.release()
+out_vid_256.release()
 cv2.destroyAllWindows()
 
 # Plot the x vs y vs frame data
