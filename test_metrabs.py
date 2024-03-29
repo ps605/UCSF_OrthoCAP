@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import Rectangle
 import pandas as pd
+import os
 
 def resizeWithPad(image: np.array, 
     new_shape: Tuple[int, int], 
@@ -59,95 +60,100 @@ def plot_results(image, pred, joint_names, joint_edges):
    #     #image_ax.scatter(*pose2d.T, s=2)
    #     pose_ax.scatter(*pose3d.T, s=2)
 
-video_name = 'IMG_0122'
-
+# Load METRABS model
 model = hub.load('/Users/orthocap_01/Documents/Research/UCSF/Development/Motion_Tracking/metrabs_eff2l_y4_384px_800k_28ds')  # Takes about 3 minutes
 #! wget -q https://istvansarandi.com/eccv22_demo/test.jpg
 #img = tf.image.decode_image(tf.io.read_file('/Users/orthocap_01/Desktop/download.jpeg'))
 
+data_path = './video_data/' 
+video_files = os.listdir(data_path)
 
-joint_names = model.per_skeleton_joint_names['smpl+head_30'].numpy().astype(str)
-joint_edges = model.per_skeleton_joint_edges['smpl+head_30'].numpy()
+# Loop through videos 
+for video_file in video_files:
+    if video_file.endswith('.MP4'):
+     
+        joint_names = model.per_skeleton_joint_names['smpl+head_30'].numpy().astype(str)
+        joint_edges = model.per_skeleton_joint_edges['smpl+head_30'].numpy()
 
-# Image handling and pose detection
-cap = cv2.VideoCapture(('./video_data/' +  video_name + '.mp4')) 
+        # Image handling and pose detection
+        cap = cv2.VideoCapture((data_path +  video_file)) 
 
-n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
 
-# Initialise variables 
-i_frame = 0
-keypoint_data_x = np.zeros((30, n_frames))
-keypoint_data_y = np.zeros((30, n_frames))
-keypoint_data_z = np.zeros((30, n_frames))
-keypoint_data_c = np.zeros((30, n_frames))
-keypoint_data_t = np.zeros((n_frames,1))
+        # Initialise variables 
+        i_frame = 0
+        keypoint_data_x = np.zeros((30, n_frames))
+        keypoint_data_y = np.zeros((30, n_frames))
+        keypoint_data_z = np.zeros((30, n_frames))
+        keypoint_data_c = np.zeros((30, n_frames))
+        keypoint_data_t = np.zeros((n_frames,1))
 
-while cap.isOpened():
-   
-    # Read frame
-    ret, frame = cap.read()
-    
-    # Exit if no frame returned (workaround for capture open afer final frame)
-    if frame is None:
-        break
+        while cap.isOpened():
+        
+            # Read frame
+            ret, frame = cap.read()
+            
+            # Exit if no frame returned (workaround for capture open afer final frame)
+            if frame is None:
+                break
 
-    # Mirror image
-    frame = cv2.flip(frame,1)
+            # Mirror image
+            frame = cv2.flip(frame,1)
 
-    # Resize image
-    image = resizeWithPad(frame,[256,256], [0,0,0]) 
-    img = image.copy()
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            # Resize image
+            image = resizeWithPad(frame,[256,256], [0,0,0]) 
+            img = image.copy()
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-    pred = model.detect_poses(img, skeleton='smpl+head_30')
-    pred['poses3d'].shape
+            pred = model.detect_poses(img, skeleton='smpl+head_30')
+            pred['poses3d'].shape
 
-    poses3d = pred['poses3d'].numpy()
-    # Check if no detection then skip loop
-    if poses3d.size == 0:
-        continue
-    # Create arrays to save out keypoints 
-    # Pass frame number
-    keypoint_data_t[i_frame,0] = i_frame
-    # Pass x values
-    keypoint_data_x[:,i_frame] = poses3d[0,:,0]
-    # Pass y values
-    keypoint_data_y[:,i_frame] = poses3d[0,:,1]
-    # Pass confidence values
-    keypoint_data_z[:,i_frame] = poses3d[0,:,2]
+            poses3d = pred['poses3d'].numpy()
+            # Check if no detection then skip loop
+            if poses3d.size == 0:
+                continue
+            # Create arrays to save out keypoints 
+            # Pass frame number
+            keypoint_data_t[i_frame,0] = i_frame
+            # Pass x values
+            keypoint_data_x[:,i_frame] = poses3d[0,:,0]
+            # Pass y values
+            keypoint_data_y[:,i_frame] = poses3d[0,:,1]
+            # Pass confidence values
+            keypoint_data_z[:,i_frame] = poses3d[0,:,2]
 
-    #plot_results(img, pred, joint_names, joint_edges)
-    
-    i_frame = i_frame + 1     
-    if cv2.waitKey(10) & 0xFF==ord('q'):
-        break
-    
-cap.release()
-#out_vid.release()
-cv2.destroyAllWindows()
+            #plot_results(img, pred, joint_names, joint_edges)
+            
+            i_frame = i_frame + 1     
+            if cv2.waitKey(10) & 0xFF==ord('q'):
+                break
+            
+        cap.release()
+        #out_vid.release()
+        cv2.destroyAllWindows()
 
-pose_x = np.transpose(keypoint_data_x)
-pose_y = np.transpose(keypoint_data_z)
-pose_z = np.transpose(-keypoint_data_y)
+        pose_x = np.transpose(keypoint_data_x)
+        pose_y = np.transpose(keypoint_data_z)
+        pose_z = np.transpose(-keypoint_data_y)
 
-n_frames, n_markers = pose_x.shape
-pose_xyz = np.zeros((n_frames, n_markers*3))
-for i_marker in range(n_markers):
-    pose_xyz[:,i_marker*3] = pose_x[:,i_marker]
-    pose_xyz[:,i_marker*3 + 1] = pose_y[:,i_marker]
-    pose_xyz[:,i_marker*3 + 2] = pose_z[:,i_marker]
+        n_frames, n_markers = pose_x.shape
+        pose_xyz = np.zeros((n_frames, n_markers*3))
+        for i_marker in range(n_markers):
+            pose_xyz[:,i_marker*3] = pose_x[:,i_marker]
+            pose_xyz[:,i_marker*3 + 1] = pose_y[:,i_marker]
+            pose_xyz[:,i_marker*3 + 2] = pose_z[:,i_marker]
 
-out_xyz = pd.DataFrame(np.squeeze(pose_xyz))
-out_xyz.to_csv(('./Out/Data/' + video_name + '_3DTracked.csv'))
+        out_xyz = pd.DataFrame(np.squeeze(pose_xyz))
+        out_xyz.to_csv(('./Out/Data/' + video_file[:-4] + '_3DTracked.csv'))
 
-out_x = pd.DataFrame(pose_x)
-out_x.to_csv(('./Out/Data/' + video_name + '_3DTracked_x.csv'))
+        out_x = pd.DataFrame(pose_x)
+        out_x.to_csv(('./Out/Data/' + video_file[:-4]  + '_3DTracked_x.csv'))
 
-out_y = pd.DataFrame(pose_y)
-out_y.to_csv(('./Out/Data/' + video_name + '_3DTracked_y.csv'))
+        out_y = pd.DataFrame(pose_y)
+        out_y.to_csv(('./Out/Data/' + video_file[:-4]  + '_3DTracked_y.csv'))
 
-out_z = pd.DataFrame(pose_z)
-out_z.to_csv(('./Out/Data/' + video_name + '_3DTracked_z.csv'))
+        out_z = pd.DataFrame(pose_z)
+        out_z.to_csv(('./Out/Data/' + video_file[:-4]  + '_3DTracked_z.csv'))
 
-print('done')
+        print('3D pose estimation complete for: ./Out/Data/' + video_file[:-4]  + '_3DTracked.csv')

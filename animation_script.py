@@ -11,6 +11,8 @@ import os
 
 # SETUP
 plt.ioff()
+plt.style.use('dark_background')
+
 flag_seperateXYZ    = True
 flag_makeGIF        = True
 flag_midShldrPevlis = False
@@ -23,7 +25,7 @@ data_path = './Out/Data/'
 csv_files = os.listdir(data_path)
 
 for csv_file in csv_files:
-    if csv_file.endswith('3Dtracked.csv'):
+    if csv_file.endswith('3DTracked.csv'):
 
         # Load in tracked joint data from 3D pose estimation
         if flag_seperateXYZ == True:
@@ -182,7 +184,7 @@ for csv_file in csv_files:
                 y = pose_y[i, :]
                 z = pose_z[i, :]
 
-                ax.scatter(x, y, z, c = 'red', s = 14, marker = 'o')
+                ax.scatter(x, y, z, c = 'red', s = 15, marker = 'o')
 
                 if flag_midShldrPevlis == True:
                     ax.scatter(midShoulder[i,0], midShoulder[i,1], midShoulder[i,2], c = 'green', s = 14, marker = 'o' )
@@ -208,11 +210,12 @@ for csv_file in csv_files:
                     Z.append(0)
                     ax.plot(X, Y, Z, c = colours[i_joint])      
 
-                ax.set_title(['Frame Number: ' + str(i)])
+                ax.set_title('Frame Number:'  +  str(i))
                 ax.set_xlim(x_min + 0.1*x_min, x_max + 0.1*x_max)
                 ax.set_ylim(y_min + 0.1*y_min, y_max + 0.1*y_max)
                 ax.set_zlim(z_min + 0.1*z_min, z_max + 0.1*z_max)
-                ax.set_aspect('equal')   
+                ax.set_aspect('equal')
+                ax.grid(False)   
                 
             fig = plt.figure(dpi=100)
             fig.set_figheight(9.6)
