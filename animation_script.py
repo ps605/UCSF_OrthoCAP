@@ -4,38 +4,81 @@ from numpy.linalg import linalg as la
 import matplotlib.animation as animation
 import csv
 import numpy as np
+from scipy import signal
 import pandas as pd
 import matplotlib.cm as cm
 import os
 
 # SETUP
 plt.ioff()
-flag_seperateXYZ    = False
+flag_seperateXYZ    = True
 flag_makeGIF        = True
-flag_midShldrPevlis = True
+flag_midShldrPevlis = False
 
 # Where to read data from
-data_path = '../Study_XSens_Ames/In/Box_data/'
+data_path = './Out/Data/'
+
 
 # List files in directory, loop through them and check for .csv
 csv_files = os.listdir(data_path)
 
 for csv_file in csv_files:
-    if csv_file.endswith('pos.csv'):
+    if csv_file.endswith('3Dtracked.csv'):
 
-        # Get base trial name
-        trial_name = data_path + csv_file[:-8] #'IMU_Segment_pos_xyz'
-
-        # Load in tracked joint data from 3D pose and pass to array (XYZ)
+        # Load in tracked joint data from 3D pose estimation
         if flag_seperateXYZ == True:
-            data_x = pd.read_csv('./Out/Data/' + trial_name + '_3Dtracked_x_no_headers.csv')
-            pose_x = np.array(data_x, dtype='float')
-            data_y = pd.read_csv('./Out/Data/' + trial_name + '_3Dtracked_y_no_headers.csv')
-            pose_y = np.array(data_y, dtype='float')
-            data_z = pd.read_csv('./Out/Data/' + trial_name + '_3Dtracked_z_no_headers.csv')
-            pose_z = np.array(data_z, dtype='float')
+
+            # Get base trial name
+            trial_name = data_path + csv_file
+
+            data_xyz = pd.read_csv(trial_name)
+            data_xyz = data_xyz.drop(columns='Unnamed: 0')
+
+            # TO np.array
+            pose_xyz = np.array(data_xyz, dtype='float')
+            n_frames, n_markers = pose_xyz.shape
+
+            # Split
+            pose_x = pose_xyz[:,0::3]         
+            pose_y = pose_xyz[:,1::3]       
+            pose_z = pose_xyz[:,2::3]
+
+            # Remove offset
+            pose_x_off = pose_x[:,11]
+            pose_x_off.shape = [n_frames,1]
+            pose_x = pose_x - pose_x_off
+
+            pose_y_off = pose_y[:,11]
+            pose_y_off.shape = [n_frames,1]
+            pose_y = pose_y - pose_y_off
+            
+            pose_z_off = pose_z[:,11]
+            pose_z_off.shape = [n_frames,1]
+            pose_z = pose_z - pose_z_off
+
+            # Filtering
+            f_order = 2
+            f_cutoff = 2
+            f_sampling = 30
+            f_nyquist = f_cutoff/(f_sampling/2)
+            b, a = signal.butter(2, f_nyquist, 'lowpass', analog = False)
+
+            pose_x = signal.filtfilt(b, a, pose_x, axis=0)
+            pose_y = signal.filtfilt(b, a, pose_y, axis=0)
+            pose_z = signal.filtfilt(b, a, pose_z, axis=0)
+
+            x_min = np.min(pose_x)
+            x_max = np.max(pose_x)
+            y_min = np.min(pose_y)
+            y_max = np.max(pose_y)
+            z_min = np.min(pose_z)
+            z_max = np.max(pose_z)
+
+        # Load in data from IMU estimations (Movella)
         else:
 
+            # Get base trial name
+            trial_name = data_path + csv_file[:-8] #'IMU_Segment_pos_xyz'
             # Get position .csv
             data_xyz = pd.read_csv(trial_name + '_pos.csv')
             # Remove "Frame" column
@@ -107,20 +150,10 @@ for csv_file in csv_files:
             # Calculate vector between pelvis and mid shoulders (in global frame)
             d_mShd2Pel = midShoulder - pelvis
 
-        n_frames, n_cols = np.shape(pose_xyz)
+        n_frames, n_cols = np.shape(pose_x)
         frames_v = range(n_frames)
         ang_eul = np.zeros((n_frames,3))
 
-        # plt.figure()
-        # if flag_midShldrPevlis == True:
-        #     plt.scatter(d_mShd2Pel[:,0], d_mShd2Pel[:,1], c=frames_v[:]], cmap='jet')
-        #     plt.colorbar()
-        # plt.xlim(-150, 150)
-        # plt.ylim(-150, 150)
-        # plt.xlabel('Anterior displacement (mm)')
-        # plt.ylabel('Lateral displacement (mm)')        
-        # plt.savefig(data_path + 'Figures/' + csv_file[0:-4] + '.png')
-        # plt.close()
 
         # Generate .gif of motion
         if flag_makeGIF:
@@ -150,22 +183,24 @@ for csv_file in csv_files:
                 z = pose_z[i, :]
 
                 ax.scatter(x, y, z, c = 'red', s = 14, marker = 'o')
-                ax.scatter(midShoulder[i,0], midShoulder[i,1], midShoulder[i,2], c = 'green', s = 14, marker = 'o' )
 
-                # Orientation of pelvis in global from IMU quaternions
-                rm_pelvis = R.from_quat([ori_q1[i, idx_pelvis_q], ori_q2[i, idx_pelvis_q], ori_q3[i, idx_pelvis_q], ori_q0[i, idx_pelvis_q]])
-                ang_eul[i,:] = rm_pelvis.as_euler('xyz', degrees=True)
-                
-                # Get as rotation matrix to calculate vectors
-                rm_pelvis_mat = rm_pelvis.as_matrix()
-                # Get pelvis vectors for coordinate system plotting
-                pelvis_pos = [pose_x[i,idx_pelvis_q], pose_y[i,idx_pelvis_q], pose_z[i,idx_pelvis_q]]
-                pelvis_rf_pnts = np.transpose(rm_pelvis_mat)*100 + pelvis_pos
+                if flag_midShldrPevlis == True:
+                    ax.scatter(midShoulder[i,0], midShoulder[i,1], midShoulder[i,2], c = 'green', s = 14, marker = 'o' )
 
-                # Plot pelvis coordinate system
-                ax.plot([pelvis_pos[0],pelvis_rf_pnts[0,0]], [pelvis_pos[1],pelvis_rf_pnts[0,1]], [pelvis_pos[2],pelvis_rf_pnts[0,2]],color = 'red')
-                ax.plot([pelvis_pos[0],pelvis_rf_pnts[1,0]], [pelvis_pos[1],pelvis_rf_pnts[1,1]], [pelvis_pos[2],pelvis_rf_pnts[1,2]],color = 'green')
-                ax.plot([pelvis_pos[0],pelvis_rf_pnts[2,0]], [pelvis_pos[1],pelvis_rf_pnts[2,1]], [pelvis_pos[2],pelvis_rf_pnts[2,2]],color = 'blue')
+                    # Orientation of pelvis in global from IMU quaternions
+                    rm_pelvis = R.from_quat([ori_q1[i, idx_pelvis_q], ori_q2[i, idx_pelvis_q], ori_q3[i, idx_pelvis_q], ori_q0[i, idx_pelvis_q]])
+                    ang_eul[i,:] = rm_pelvis.as_euler('xyz', degrees=True)
+                    
+                    # Get as rotation matrix to calculate vectors
+                    rm_pelvis_mat = rm_pelvis.as_matrix()
+                    # Get pelvis vectors for coordinate system plotting
+                    pelvis_pos = [pose_x[i,idx_pelvis_q], pose_y[i,idx_pelvis_q], pose_z[i,idx_pelvis_q]]
+                    pelvis_rf_pnts = np.transpose(rm_pelvis_mat)*100 + pelvis_pos
+
+                    # Plot pelvis coordinate system
+                    ax.plot([pelvis_pos[0],pelvis_rf_pnts[0,0]], [pelvis_pos[1],pelvis_rf_pnts[0,1]], [pelvis_pos[2],pelvis_rf_pnts[0,2]],color = 'red')
+                    ax.plot([pelvis_pos[0],pelvis_rf_pnts[1,0]], [pelvis_pos[1],pelvis_rf_pnts[1,1]], [pelvis_pos[2],pelvis_rf_pnts[1,2]],color = 'green')
+                    ax.plot([pelvis_pos[0],pelvis_rf_pnts[2,0]], [pelvis_pos[1],pelvis_rf_pnts[2,1]], [pelvis_pos[2],pelvis_rf_pnts[2,2]],color = 'blue')
                 
                 for i_joint in track_marker_idx:
                     X.append(x[i_joint])

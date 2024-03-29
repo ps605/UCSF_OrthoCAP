@@ -59,7 +59,7 @@ def plot_results(image, pred, joint_names, joint_edges):
    #     #image_ax.scatter(*pose2d.T, s=2)
    #     pose_ax.scatter(*pose3d.T, s=2)
 
-video_name = 'center_trim'
+video_name = 'IMG_0122'
 
 model = hub.load('/Users/orthocap_01/Documents/Research/UCSF/Development/Motion_Tracking/metrabs_eff2l_y4_384px_800k_28ds')  # Takes about 3 minutes
 #! wget -q https://istvansarandi.com/eccv22_demo/test.jpg
@@ -131,13 +131,23 @@ pose_x = np.transpose(keypoint_data_x)
 pose_y = np.transpose(keypoint_data_z)
 pose_z = np.transpose(-keypoint_data_y)
 
+n_frames, n_markers = pose_x.shape
+pose_xyz = np.zeros((n_frames, n_markers*3))
+for i_marker in range(n_markers):
+    pose_xyz[:,i_marker*3] = pose_x[:,i_marker]
+    pose_xyz[:,i_marker*3 + 1] = pose_y[:,i_marker]
+    pose_xyz[:,i_marker*3 + 2] = pose_z[:,i_marker]
+
+out_xyz = pd.DataFrame(np.squeeze(pose_xyz))
+out_xyz.to_csv(('./Out/Data/' + video_name + '_3DTracked.csv'))
+
 out_x = pd.DataFrame(pose_x)
-out_x.to_csv(('./Out/Data/' + video_name + '_3Dtracked_x.csv'))
+out_x.to_csv(('./Out/Data/' + video_name + '_3DTracked_x.csv'))
 
 out_y = pd.DataFrame(pose_y)
-out_y.to_csv(('./Out/Data/' + video_name + '_3Dtracked_y.csv'))
+out_y.to_csv(('./Out/Data/' + video_name + '_3DTracked_y.csv'))
 
 out_z = pd.DataFrame(pose_z)
-out_z.to_csv(('./Out/Data/' + video_name + '_3Dtracked_z.csv'))
+out_z.to_csv(('./Out/Data/' + video_name + '_3DTracked_z.csv'))
 
 print('done')
