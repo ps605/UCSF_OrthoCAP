@@ -17,6 +17,13 @@ flag_seperateXYZ    = True
 flag_makeGIF        = True
 flag_midShldrPevlis = False
 
+# Filtering            
+f_order = 2
+f_cutoff = 2
+f_sampling = 30
+f_nyquist = f_cutoff/(f_sampling/2)
+b, a = signal.butter(2, f_nyquist, 'lowpass', analog = False)
+
 # Where to read data from
 data_path = './Out/Data/'
 
@@ -58,13 +65,8 @@ for csv_file in csv_files:
             pose_z_off.shape = [n_frames,1]
             pose_z = pose_z - pose_z_off
 
-            # Filtering
-            f_order = 2
-            f_cutoff = 2
-            f_sampling = 30
-            f_nyquist = f_cutoff/(f_sampling/2)
-            b, a = signal.butter(2, f_nyquist, 'lowpass', analog = False)
 
+            # Filter Keypoints
             pose_x = signal.filtfilt(b, a, pose_x, axis=0)
             pose_y = signal.filtfilt(b, a, pose_y, axis=0)
             pose_z = signal.filtfilt(b, a, pose_z, axis=0)

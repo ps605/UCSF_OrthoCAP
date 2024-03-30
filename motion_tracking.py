@@ -5,10 +5,21 @@ import pandas as pd
 from matplotlib import pyplot as plt
 import cv2
 from typing import Tuple
+from scipy import signal
+import os
+
 
 # Parameters and flags
+data_path = './video_data/' 
 confidence_threshold = 0.3
-video_name = 'IMG_0101'
+video_files = os.listdir(data_path)
+
+# Filtering         
+f_order = 2
+f_cutoff = 3
+f_sampling = 30
+f_nyquist = f_cutoff/(f_sampling/2)
+b, a = signal.butter(2, f_nyquist, 'lowpass', analog = False)
 
 EDGES = {
     (0, 1): 'm',
@@ -77,13 +88,12 @@ def draw_connections(frame, keypoints, edges, confidence_threshold):
         if (c1 > confidence_threshold) & (c2 > confidence_threshold):      
             cv2.line(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0,0,255), 4)
 
-def draw_keypoints_cor(frame, keypoints_with_scores, confidence_threshold):
+def draw_keypoints_cor(frame, kp, confidence_threshold):
     y, x, c = frame.shape
     
     lamda = 100/56.25
     beta = -lamda*0.21875
     
-    kp = np.squeeze(keypoints_with_scores)
     kp_y_scale_offset = 0 #kp[:,0]*0.25 - 0.125
     kp_x_scale_offset = kp[:,1]*lamda + beta
 
@@ -99,13 +109,12 @@ def draw_keypoints_cor(frame, keypoints_with_scores, confidence_threshold):
         if kp_conf > confidence_threshold:
             cv2.circle(frame, (int(kx), int(ky)), 4, (0,255,0), -1)
 
-def draw_connections_cor(frame, keypoints_with_scores, edges, confidence_threshold):
+def draw_connections_cor(frame, kp, edges, confidence_threshold):
     y, x, c = frame.shape
     
     lamda = 100/56.25
     beta = -lamda*0.21875
 
-    kp = np.squeeze(keypoints_with_scores)
     kp_y_scale_offset = 0 #kp[:,0]*0.25 - 0.125
     kp_x_scale_offset = kp[:,1]*lamda + beta
 
@@ -149,105 +158,134 @@ def resizeWithPad(image: np.array,
     image = cv2.copyMakeBorder(image, top, bottom, left, right, cv2.BORDER_CONSTANT, value=padding_color)
     return image
 
-# Image handling and pose detection
-cap = cv2.VideoCapture(('./video_data/' +  video_name + '.mp4')) 
-out_vid = cv2.VideoWriter(('./video_data/' + video_name + '_tracked.avi'), cv2.VideoWriter_fourcc('M','J','P','G'), 30, (720, 1280))
-out_vid_256 = cv2.VideoWriter(('./video_data/' + video_name + '_256_tracked.avi'), cv2.VideoWriter_fourcc('M','J','P','G'), 30, (256, 256))
+# Loop through videos 
+for video_file in video_files:
+    if video_file.endswith('.MP4'):
+        
+        video_name = video_file[:-4]
 
-n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        # Image handling and pose detection
+        cap = cv2.VideoCapture(('./video_data/' +  video_name + '.mp4')) 
+        out_vid = cv2.VideoWriter(('./video_data/' + video_name + '_tracked.avi'), cv2.VideoWriter_fourcc('M','J','P','G'), 30, (720, 1280))
+        out_vid_256 = cv2.VideoWriter(('./video_data/' + video_name + '_256_tracked.avi'), cv2.VideoWriter_fourcc('M','J','P','G'), 30, (256, 256))
 
-# Initialise variables 
-i_frame = 0
-keypoint_data_x = np.zeros((17, n_frames))
-keypoint_data_y = np.zeros((17, n_frames))
-keypoint_data_c = np.zeros((17, n_frames))
-keypoint_data_t = np.zeros((n_frames,1))
+        n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-while cap.isOpened():
-   
-    # Read frame
-    ret, frame = cap.read()
-    
-    # Exit if no frame returned (workaround for capture open afer final frame)
-    if frame is None:
-        break
+        # Initialise variables 
+        i_frame = 0
+        keypoint_data_x = np.zeros((17, n_frames))
+        keypoint_data_y = np.zeros((17, n_frames))
+        keypoint_data_c = np.zeros((17, n_frames))
+        keypoint_data_t = np.zeros((n_frames,1))
 
-    # Mirror image
-    frame = cv2.flip(frame,1)
+        while cap.isOpened():
+        
+            # Read frame
+            ret, frame = cap.read()
+            
+            # Exit if no frame returned (workaround for capture open afer final frame)
+            if frame is None:
+                break
 
-    # Resize image
-    image = resizeWithPad(frame,[256,256], [0,0,0]) 
-    img = image.copy()
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    input_img = tf.image.resize_with_pad(tf.expand_dims(img, axis=0), 256, 256)
-    input_img = tf.cast(input_img, dtype=tf.int32)
-  
-    # Detection section
-    results = movenet(input_img)
-    keypoints_with_scores = results['output_0']
-    kp = np.squeeze(keypoints_with_scores)
+            # Mirror image
+            frame = cv2.flip(frame,1)
 
-    
-    # Create arrays to save out keypoints 
-    # Pass frame number
-    keypoint_data_t[i_frame,0] = i_frame
-    # Pass x values
-    keypoint_data_x[:,i_frame] = np.transpose(kp[:,0])
-    # Pass y values
-    keypoint_data_y[:,i_frame] = np.transpose(kp[:,1])
-    # Pass confidence values
-    keypoint_data_c[:,i_frame] = np.transpose(kp[:,2])
-    
-    # Render keypoints 
-    draw_connections_cor(frame, keypoints_with_scores, EDGES, confidence_threshold)
-    draw_keypoints_cor(frame, keypoints_with_scores, confidence_threshold)
+            # Resize image
+            image = resizeWithPad(frame,[256,256], [0,0,0]) 
+            img = image.copy()
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            input_img = tf.image.resize_with_pad(tf.expand_dims(img, axis=0), 256, 256)
+            input_img = tf.cast(input_img, dtype=tf.int32)
+        
+            # Detection section
+            results = movenet(input_img)
+            keypoints_with_scores = results['output_0']
+            kp = np.squeeze(keypoints_with_scores)
 
-    out_vid.write(frame)
-    cv2.imshow('Movenet Single Pose', frame)
-          
-    draw_connections(image, keypoints_with_scores, EDGES, confidence_threshold)
-    draw_keypoints(image, keypoints_with_scores, confidence_threshold)
-    
-    out_vid_256.write(image)
-    cv2.imshow("Padded image", image)
+            
+            # Create arrays to save out keypoints 
+            # Pass frame number
+            keypoint_data_t[i_frame,0] = i_frame
+            # Pass x values
+            keypoint_data_x[:,i_frame] = np.transpose(kp[:,0])
+            # Pass y values
+            keypoint_data_y[:,i_frame] = np.transpose(kp[:,1])
+            # Pass confidence values
+            keypoint_data_c[:,i_frame] = np.transpose(kp[:,2])
+            
+            out_vid_256.write(image)
+            cv2.imshow("Padded image", image)
 
-    i_frame = i_frame + 1 
-    
-    if cv2.waitKey(10) & 0xFF==ord('q'):
-        break
-    
-cap.release()
-out_vid.release()
-out_vid_256.release()
-cv2.destroyAllWindows()
+            i_frame = i_frame + 1 
+            
+            if cv2.waitKey(10) & 0xFF==ord('q'):
+                break
 
-# Plot the x vs y vs frame data
-fig1 = plt
+        cap.release()
 
-for i_kp in [5, 6, 11, 12, 13, 14, 15, 16]:
-    fig1.scatter(x=keypoint_data_y[i_kp,:]*256, y=keypoint_data_x[i_kp,:]*-256, c=keypoint_data_t, cmap='jet', s=10, alpha=0.25)
+        kp =[]
+        kp.append(keypoint_data_x)
+        kp.append(keypoint_data_y)
+        kp.append(keypoint_data_c)
+        kp = np.array(kp)
+        kp_filt = signal.filtfilt(b, a, kp, axis=2)
 
-fig1.title('Joints')
-fig1.xlabel('Pixel (#)')
-fig1.ylabel('Pixel (#)')
-fig1.xlim(0,256)
-fig1.ylim(-256, 0)
-fig1.colorbar(label='Frame Number', orientation='vertical')
+        cap = cv2.VideoCapture(('./video_data/' +  video_name + '.mp4')) 
+        i_frame = 0
+        while cap.isOpened():
+        
+            # Read frame
+            ret, frame = cap.read()
+            
+            # Exit if no frame returned (workaround for capture open afer final frame)
+            if frame is None:
+                break
 
-fig1.savefig('./Out/Figures/' + video_name + '_joint_xyvst.png')
+            # Mirror image
+            frame = cv2.flip(frame,1)
+            # Render keypoints 
+            draw_connections_cor(frame, np.transpose(kp_filt[:,:,i_frame]), EDGES, confidence_threshold)
+            draw_keypoints_cor(frame, np.transpose(kp_filt[:,:,i_frame]), confidence_threshold)
 
-# Save out data as .csv files
-out_headers = pd.DataFrame(np.transpose(keypoint_names))
-out_headers.to_csv(('./Out/Data/' + video_name + '_tracked_headers.csv'))
+            out_vid.write(frame)
+            cv2.imshow('Movenet Single Pose', frame)
 
-out_x = pd.DataFrame(np.transpose(keypoint_data_x))
-out_x.to_csv(('./Out/Data/' + video_name + '_tracked_x.csv'))
+            i_frame = i_frame + 1 
+            
+                
 
-out_y = pd.DataFrame(np.transpose(keypoint_data_y))
-out_y.to_csv(('./Out/Data/' + video_name + '_tracked_y.csv'))
+        cap.release()
+        out_vid.release()
+        out_vid_256.release()
+        cv2.destroyAllWindows()
 
-out_c = pd.DataFrame(np.transpose(keypoint_data_c))
-out_c.to_csv(('./Out/Data/' + video_name + '_tracked_c.csv'))
+        # Plot the x vs y vs frame data
+        fig1 = plt
 
-out_t = pd.DataFrame(np.transpose(keypoint_data_t))
-out_t.to_csv(('./Out/Data/' + video_name + '_tracked_t.csv'))
+        for i_kp in [5, 6, 11, 12, 13, 14, 15, 16]:
+            fig1.scatter(x=keypoint_data_y[i_kp,:]*256, y=keypoint_data_x[i_kp,:]*-256, c=keypoint_data_t, cmap='jet', s=10, alpha=0.25)
+
+        fig1.title('Joints')
+        fig1.xlabel('Pixel (#)')
+        fig1.ylabel('Pixel (#)')
+        fig1.xlim(0,256)
+        fig1.ylim(-256, 0)
+        fig1.colorbar(label='Frame Number', orientation='vertical')
+
+        fig1.savefig('./Out/Figures/' + video_name + '_joint_xyvst.png')
+
+        # Save out data as .csv files
+        out_headers = pd.DataFrame(np.transpose(keypoint_names))
+        out_headers.to_csv(('./Out/Data/' + video_name + '_tracked_headers.csv'))
+
+        out_x = pd.DataFrame(np.transpose(keypoint_data_x))
+        out_x.to_csv(('./Out/Data/' + video_name + '_tracked_x.csv'))
+
+        out_y = pd.DataFrame(np.transpose(keypoint_data_y))
+        out_y.to_csv(('./Out/Data/' + video_name + '_tracked_y.csv'))
+
+        out_c = pd.DataFrame(np.transpose(keypoint_data_c))
+        out_c.to_csv(('./Out/Data/' + video_name + '_tracked_c.csv'))
+
+        out_t = pd.DataFrame(np.transpose(keypoint_data_t))
+        out_t.to_csv(('./Out/Data/' + video_name + '_tracked_t.csv'))
