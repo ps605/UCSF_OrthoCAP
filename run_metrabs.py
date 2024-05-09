@@ -35,12 +35,6 @@ def resizeWithPad(image: np.array,
     return image
 def plot_results(image, pred, joint_names, joint_edges):
 
-    #fig = plt.figure()
-    #image_ax = fig.add_subplot(1, 2, 1)
-    #image_ax.imshow(image.numpy())
-    #for x, y, w, h, c in pred['boxes'].numpy():
-    #    image_ax.add_patch(Rectangle((x, y), w, h, fill=False))
-
     pose_ax = plt.axes( projection='3d')
     pose_ax.set_xlim3d(-1500, 1500)
     pose_ax.set_zlim3d(-1500, 1500)
@@ -50,27 +44,19 @@ def plot_results(image, pred, joint_names, joint_edges):
     poses3d = pred['poses3d'].numpy()
     # Resctructures XYZ to XZ-Y
     poses3d[..., 1], poses3d[..., 2] = poses3d[..., 2], -poses3d[..., 1]
-    # === Updated plots ====
-    
-    # === Original Plotting code ===
-   # for pose3d, pose2d in zip(poses3d, pred['poses2d'].numpy()):
-   #     for i_start, i_end in joint_edges:
-   #         #image_ax.plot(*zip(pose2d[i_start], pose2d[i_end]), marker='o', markersize=2)
-   #         pose_ax.plot(*zip(pose3d[i_start], pose3d[i_end]), marker='o', markersize=2)
-   #     #image_ax.scatter(*pose2d.T, s=2)
-   #     pose_ax.scatter(*pose3d.T, s=2)
+ 
 
 # Load METRABS model
 model = hub.load('/Users/orthocap_01/Documents/Research/UCSF/Development/Motion_Tracking/metrabs_eff2l_y4_384px_800k_28ds')  # Takes about 3 minutes
 #! wget -q https://istvansarandi.com/eccv22_demo/test.jpg
 #img = tf.image.decode_image(tf.io.read_file('/Users/orthocap_01/Desktop/download.jpeg'))
 
-data_path = './video_data/' 
+data_path = './In/Raw_video/HPC_tests/' 
 video_files = os.listdir(data_path)
 
 # Loop through videos 
 for video_file in video_files:
-    if video_file.endswith('.MP4'):
+    if video_file.endswith('.MOV'):
      
         joint_names = model.per_skeleton_joint_names['smpl+head_30'].numpy().astype(str)
         joint_edges = model.per_skeleton_joint_edges['smpl+head_30'].numpy()
