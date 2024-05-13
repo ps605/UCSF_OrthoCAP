@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation as R
 from numpy.linalg import linalg as la
 import matplotlib.animation as animation
+from scipy.fft import fft, fftfreq
 import csv
 import numpy as np
 from scipy import signal
@@ -17,24 +18,24 @@ flag_seperateXYZ    = True
 flag_makeGIF        = True
 flag_midShldrPevlis = False
 flag_remOffset      = False
-flag_filter         = False
+flag_filter         = True
 
 # Filtering            
 f_order = 2
-f_cutoff = 2
+f_cutoff = np.array([1,5])
 f_sampling = 30
 f_nyquist = f_cutoff/(f_sampling/2)
-b, a = signal.butter(2, f_nyquist, 'lowpass', analog = False)
+b, a = signal.butter(2, f_nyquist, btype='band', analog = False)
 
 # Where to read data from
-data_path = '../Study_OSTEO/In/patientData_CSV/'
+data_path = './Out/Data/HPC_tests/'
 
 
 # List files in directory, loop through them and check for .csv
 csv_files = os.listdir(data_path)
 
 for csv_file in csv_files:
-    if csv_file.endswith('_filt.csv'): #3DTracked
+    if csv_file.endswith('3DTracked.csv'): #3DTracked
 
         # Load in tracked joint data from 3D pose estimation
         if flag_seperateXYZ == True:
@@ -43,7 +44,7 @@ for csv_file in csv_files:
             trial_name = data_path + csv_file
 
             data_xyz = pd.read_csv(trial_name)
-            #data_xyz = data_xyz.drop(columns='Unnamed: 0')
+            data_xyz = data_xyz.drop(columns='Unnamed: 0')
 
             # TO np.array
             pose_xyz = np.array(data_xyz, dtype='float')*1000
@@ -233,7 +234,7 @@ for csv_file in csv_files:
             writer = animation.PillowWriter(fps = 30,
                                                 metadata = 'None',  #dict(artist = 'Me')
                                                 bitrate = 1000)   #1800
-            ani.save(data_path + 'Figures/' + csv_file[0:-4] + '.gif', writer = writer )
+            ani.save(data_path + 'Figures/' + csv_file[0:-4] + '_bp1_5.gif', writer = writer )
 
             plt.close()
             print('Animation complete for:' + data_path + 'Figures/' + csv_file[0:-4] + '.gif')
