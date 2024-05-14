@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation as R
 from numpy.linalg import linalg as la
 import matplotlib.animation as animation
-from scipy.fft import fft, fftfreq
+from scipy.fft import fft, fftfreq, rfft, rfftfreq
 import csv
 import numpy as np
 from scipy import signal
@@ -21,11 +21,11 @@ flag_remOffset      = False
 flag_filter         = True
 
 # Filtering            
-f_order = 2
-f_cutoff = np.array([1,5])
+f_order = 4
+f_cutoff = 1
 f_sampling = 30
 f_nyquist = f_cutoff/(f_sampling/2)
-b, a = signal.butter(2, f_nyquist, btype='band', analog = False)
+b, a = signal.butter(f_order, f_nyquist, btype='lowpass', analog = False)
 
 # Where to read data from
 data_path = './Out/Data/HPC_tests/'
@@ -69,12 +69,20 @@ for csv_file in csv_files:
                 pose_z_off.shape = [n_frames,1]
                 pose_z = pose_z - pose_z_off
 
+            # ## CHECK ##
+            # yf = rfft((pose_y[:,10] - np.average(pose_y[:,10]))/1e6)
+            # xf = rfftfreq(n_frames, 1/30)
+            # plt.plot(xf, np.abs(yf))
 
             # Filter Keypoints
             if flag_filter == True:
                 pose_x = signal.filtfilt(b, a, pose_x, axis=0)
                 pose_y = signal.filtfilt(b, a, pose_y, axis=0)
                 pose_z = signal.filtfilt(b, a, pose_z, axis=0)
+
+            # yf = rfft((pose_y[:,10] - np.average(pose_y[:,10]))/1e6)
+            # xf = rfftfreq(n_frames, 1/30)
+            # plt.plot(xf, np.abs(yf))
 
             x_min = np.min(pose_x)
             x_max = np.max(pose_x)
@@ -229,12 +237,14 @@ for csv_file in csv_files:
             fig.set_figwidth(12.8)
             ax = fig.add_subplot(projection='3d')
             
+            # Create .git animation
+            fig_name = csv_file[0:-4] + '_lp1_4order'
             ani = animation.FuncAnimation(fig = fig, func = update, frames = n_frames, interval = 1, repeat = False)
 
             writer = animation.PillowWriter(fps = 30,
                                                 metadata = 'None',  #dict(artist = 'Me')
                                                 bitrate = 1000)   #1800
-            ani.save(data_path + 'Figures/' + csv_file[0:-4] + '_bp1_5.gif', writer = writer )
+            ani.save(data_path + 'Figures/' + fig_name + '.gif', writer = writer )
 
             plt.close()
-            print('Animation complete for:' + data_path + 'Figures/' + csv_file[0:-4] + '.gif')
+            print('Animation complete for:' + data_path + 'Figures/' + fig_name + '.gif')
