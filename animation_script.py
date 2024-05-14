@@ -17,7 +17,7 @@ plt.style.use('dark_background')
 flag_seperateXYZ    = True
 flag_makeGIF        = True
 flag_midShldrPevlis = False
-flag_remOffset      = False
+flag_remOffset      = True
 flag_filter         = True
 
 # Filtering            
@@ -54,20 +54,7 @@ for csv_file in csv_files:
             pose_x = pose_xyz[:,0::3]         
             pose_y = pose_xyz[:,1::3]       
             pose_z = pose_xyz[:,2::3]
-
-            # Remove offset
-            if flag_remOffset == True:
-                pose_x_off = pose_x[:,11]
-                pose_x_off.shape = [n_frames,1]
-                pose_x = pose_x - pose_x_off
-
-                pose_y_off = pose_y[:,11]
-                pose_y_off.shape = [n_frames,1]
-                pose_y = pose_y - pose_y_off
-                
-                pose_z_off = pose_z[:,11]
-                pose_z_off.shape = [n_frames,1]
-                pose_z = pose_z - pose_z_off
+            
 
             # ## CHECK ##
             # yf = rfft((pose_y[:,10] - np.average(pose_y[:,10]))/1e6)
@@ -83,6 +70,23 @@ for csv_file in csv_files:
             # yf = rfft((pose_y[:,10] - np.average(pose_y[:,10]))/1e6)
             # xf = rfftfreq(n_frames, 1/30)
             # plt.plot(xf, np.abs(yf))
+
+            # Remove offset
+            if flag_remOffset == True:
+                # pose_x_off = pose_x[:,11]
+                pose_x_off = np.average(pose_x, axis = 1)
+                pose_x_off.shape = [n_frames,1]
+                pose_x = pose_x - pose_x_off
+
+                # pose_y_off = pose_y[:,11]
+                pose_y_off = np.average(pose_y, axis = 1)
+                pose_y_off.shape = [n_frames,1]
+                pose_y = pose_y - pose_y_off
+                
+                # pose_z_off = pose_z[:,11]
+                pose_z_off = np.average(pose_z, axis = 1)
+                pose_z_off.shape = [n_frames,1]
+                pose_z = pose_z - pose_z_off
 
             x_min = np.min(pose_x)
             x_max = np.max(pose_x)
@@ -238,9 +242,9 @@ for csv_file in csv_files:
             ax = fig.add_subplot(projection='3d')
             
             # Create .git animation
-            fig_name = csv_file[0:-4] + '_lp1_4order'
+            fig_name = csv_file[0:-4] + '_lp1_4order_offAfterFilter'
+            
             ani = animation.FuncAnimation(fig = fig, func = update, frames = n_frames, interval = 1, repeat = False)
-
             writer = animation.PillowWriter(fps = 30,
                                                 metadata = 'None',  #dict(artist = 'Me')
                                                 bitrate = 1000)   #1800
