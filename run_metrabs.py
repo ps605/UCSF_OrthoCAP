@@ -53,13 +53,13 @@ model = hub.load('/Users/orthocap_01/Documents/Research/UCSF/Development/Motion_
 #img = tf.image.decode_image(tf.io.read_file('/Users/orthocap_01/Desktop/download.jpeg'))
 
 # Initialise variables
-data_path = './In/Raw_video/HPC_tests/' 
-out_data_path = './Out/Data/HPC_tests/'
+data_path = '../Study_Validation/In/iPhone/' 
+out_data_path = '../Study_Validation/Out/metrabs/'
 keypoint_model = 'smpl+head_30'
 
 # List video files
 video_files = os.listdir(data_path)
-video_format = '.MOV'
+video_format = '.MP4'
 
 # Loop through videos 
 for video_file in video_files:
@@ -156,4 +156,4 @@ for video_file in video_files:
         out_z = pd.DataFrame(pose_z)
         out_z.to_csv((out_data_path + video_file[:-4]  + '_3DTracked_z.csv'))
 
-        print('3D pose estimation complete for: ./Out/Data/' + video_file[:-4]  + '_3DTracked.csv')
+        print('3D pose estimation complete for: ' + out_data_path + video_file[:-4]  + '_3DTracked.csv')

@@ -17,7 +17,7 @@ plt.style.use('dark_background')
 flag_seperateXYZ    = True
 flag_makeGIF        = True
 flag_midShldrPevlis = False
-flag_remOffset      = False
+flag_remOffset      = True
 flag_filter         = True
 
 # Filtering            
@@ -28,7 +28,7 @@ f_nyquist = f_cutoff/(f_sampling/2)
 b, a = signal.butter(f_order, f_nyquist, btype='lowpass', analog = False)
 
 # Where to read data from
-data_path = '../Study_Validation/Out/metrabs/' #'./Out/Data/HPC_tests/'
+data_path = '../Study_Validation/Out/metrabs/' #'../Study_Validation/In/Kinect/' #'./Out/Data/HPC_tests/'
 
 # Check if ./Figures/ path exists if not make folder
 if not os.path.exists(data_path + 'Figures/'):
@@ -50,15 +50,9 @@ for csv_file in csv_files:
             data_xyz = data_xyz.drop(columns='Unnamed: 0')
 
             # TO np.array
-            pose_xyz = np.array(data_xyz, dtype='float')*1000
+            pose_xyz = np.array(data_xyz, dtype='float')
             n_frames, n_markers = pose_xyz.shape
-
-            # Split
-            pose_x = pose_xyz[:,0::3]         
-            pose_y = pose_xyz[:,1::3]       
-            pose_z = pose_xyz[:,2::3]
-            
-
+                     
             # ## CHECK ##
             # yf = rfft((pose_y[:,10] - np.average(pose_y[:,10]))/1e6)
             # xf = rfftfreq(n_frames, 1/30)
@@ -66,9 +60,7 @@ for csv_file in csv_files:
 
             # Filter Keypoints
             if flag_filter == True:
-                pose_x = signal.filtfilt(b, a, pose_x, axis=0)
-                pose_y = signal.filtfilt(b, a, pose_y, axis=0)
-                pose_z = signal.filtfilt(b, a, pose_z, axis=0)
+                pose_xyz = signal.filtfilt(b, a, pose_xyz, axis=0)
 
             # yf = rfft((pose_y[:,10] - np.average(pose_y[:,10]))/1e6)
             # xf = rfftfreq(n_frames, 1/30)
@@ -76,20 +68,23 @@ for csv_file in csv_files:
 
             # Remove offset
             if flag_remOffset == True:
-                pose_x_off = pose_x[:,11]
+                # Create copy of matrix object otherwise it will follow what is happening to the object
+                pose_off = np.copy(pose_xyz[:,30:33])
                 # pose_x_off = np.average(pose_x, axis = 1)
-                pose_x_off.shape = [n_frames,1]
-                pose_x = pose_x - pose_x_off
-
-                pose_y_off = pose_y[:,11]
-                # pose_y_off = np.average(pose_y, axis = 1)
-                pose_y_off.shape = [n_frames,1]
-                pose_y = pose_y - pose_y_off
+                pose_off.shape = [n_frames,3]
+                for i_col in range(int(n_markers/3)):
+                    pose_xyz[:,i_col*3:i_col*3+3] = pose_xyz[:,i_col*3:i_col*3+3] - pose_off
                 
-                pose_z_off = pose_z[:,11]
-                # pose_z_off = np.average(pose_z, axis = 1)
-                pose_z_off.shape = [n_frames,1]
-                pose_z = pose_z - pose_z_off
+                
+
+            # Save out processed data
+            out_xyz = pd.DataFrame(pose_xyz)
+            out_xyz.to_csv((data_path + csv_file[:-4] + '_pro.csv'))
+
+            # Split
+            pose_x = pose_xyz[:,0::3]         
+            pose_y = pose_xyz[:,1::3]       
+            pose_z = pose_xyz[:,2::3]
 
             x_min = np.min(pose_x)
             x_max = np.max(pose_x)
