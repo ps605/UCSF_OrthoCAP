@@ -17,7 +17,7 @@ plt.style.use('dark_background')
 flag_seperateXYZ    = True
 flag_makeGIF        = True
 flag_midShldrPevlis = False
-flag_remOffset      = True
+flag_remOffset      = False
 flag_filter         = True
 
 # Filtering            
@@ -28,8 +28,11 @@ f_nyquist = f_cutoff/(f_sampling/2)
 b, a = signal.butter(f_order, f_nyquist, btype='lowpass', analog = False)
 
 # Where to read data from
-data_path = './Out/Data/HPC_tests/'
+data_path = '../Study_Validation/Out/metrabs/' #'./Out/Data/HPC_tests/'
 
+# Check if ./Figures/ path exists if not make folder
+if not os.path.exists(data_path + 'Figures/'):
+    os.mkdir(data_path + 'Figures/')
 
 # List files in directory, loop through them and check for .csv
 csv_files = os.listdir(data_path)
@@ -73,18 +76,18 @@ for csv_file in csv_files:
 
             # Remove offset
             if flag_remOffset == True:
-                # pose_x_off = pose_x[:,11]
-                pose_x_off = np.average(pose_x, axis = 1)
+                pose_x_off = pose_x[:,11]
+                # pose_x_off = np.average(pose_x, axis = 1)
                 pose_x_off.shape = [n_frames,1]
                 pose_x = pose_x - pose_x_off
 
-                # pose_y_off = pose_y[:,11]
-                pose_y_off = np.average(pose_y, axis = 1)
+                pose_y_off = pose_y[:,11]
+                # pose_y_off = np.average(pose_y, axis = 1)
                 pose_y_off.shape = [n_frames,1]
                 pose_y = pose_y - pose_y_off
                 
-                # pose_z_off = pose_z[:,11]
-                pose_z_off = np.average(pose_z, axis = 1)
+                pose_z_off = pose_z[:,11]
+                # pose_z_off = np.average(pose_z, axis = 1)
                 pose_z_off.shape = [n_frames,1]
                 pose_z = pose_z - pose_z_off
 
@@ -242,7 +245,7 @@ for csv_file in csv_files:
             ax = fig.add_subplot(projection='3d')
             
             # Create .git animation
-            fig_name = csv_file[0:-4] + '_lp1_4order_offAfterFilter'
+            fig_name = csv_file[0:-4] + '_lp1_4order_offToe'
             
             ani = animation.FuncAnimation(fig = fig, func = update, frames = n_frames, interval = 1, repeat = False)
             writer = animation.PillowWriter(fps = 30,
@@ -251,4 +254,7 @@ for csv_file in csv_files:
             ani.save(data_path + 'Figures/' + fig_name + '.gif', writer = writer )
 
             plt.close()
+
+            
+                
             print('Animation complete for:' + data_path + 'Figures/' + fig_name + '.gif')
