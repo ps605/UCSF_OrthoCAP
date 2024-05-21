@@ -68,6 +68,13 @@ for video_file in video_files:
         joint_names = model.per_skeleton_joint_names[keypoint_model].numpy().astype(str)
         joint_edges = model.per_skeleton_joint_edges[keypoint_model].numpy()
 
+        # Expand joint names to _x _y and _z 
+        joint_names_xyz = []
+        for i_joint in range(joint_names.size):
+            joint_names_xyz.append(joint_names[i_joint] + '_x')
+            joint_names_xyz.append(joint_names[i_joint] + '_y')
+            joint_names_xyz.append(joint_names[i_joint] + '_z')
+
         # Image handling and pose detection
         cap = cv2.VideoCapture((data_path +  video_file)) 
 
@@ -145,15 +152,15 @@ for video_file in video_files:
             pose_xyz[:,i_marker*3 + 2] = pose_z[:,i_marker]
 
         out_xyz = pd.DataFrame(np.squeeze(pose_xyz))
-        out_xyz.to_csv((out_data_path + video_file[:-4] + '_3DTracked.csv'))
+        out_xyz.to_csv((out_data_path + video_file[:-4] + '_3DTracked.csv'), header = joint_names_xyz)
 
         out_x = pd.DataFrame(pose_x)
-        out_x.to_csv((out_data_path + video_file[:-4]  + '_3DTracked_x.csv'))
+        out_x.to_csv((out_data_path + video_file[:-4]  + '_3DTracked_x.csv'), header = joint_names_xyz)
 
         out_y = pd.DataFrame(pose_y)
-        out_y.to_csv((out_data_path + video_file[:-4]  + '_3DTracked_y.csv'))
+        out_y.to_csv((out_data_path + video_file[:-4]  + '_3DTracked_y.csv'), header = joint_names_xyz)
 
         out_z = pd.DataFrame(pose_z)
-        out_z.to_csv((out_data_path + video_file[:-4]  + '_3DTracked_z.csv'))
+        out_z.to_csv((out_data_path + video_file[:-4]  + '_3DTracked_z.csv'), header = joint_names_xyz)
 
         print('3D pose estimation complete for: ' + out_data_path + video_file[:-4]  + '_3DTracked.csv')

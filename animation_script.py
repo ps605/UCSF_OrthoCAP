@@ -243,7 +243,7 @@ for csv_file in csv_files:
             fig_name = csv_file[0:-4] + '_lp1_4order_offToe'
             
             ani = animation.FuncAnimation(fig = fig, func = update, frames = n_frames, interval = 1, repeat = False)
-            writer = animation.PillowWriter(fps = 30,
+            writer = animation.PillowWriter(fps = f_sampling,
                                                 metadata = 'None',  #dict(artist = 'Me')
                                                 bitrate = 1000)   #1800
             ani.save(data_path + 'Figures/' + fig_name + '.gif', writer = writer )
