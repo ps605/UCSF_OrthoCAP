@@ -12,13 +12,64 @@ import os
 
 # SETUP
 plt.ioff()
-plt.style.use('dark_background')
+# plt.style.use('dark_background')
 
 flag_seperateXYZ    = True
 flag_makeGIF        = True
 flag_midShldrPevlis = False
 flag_remOffset      = True
+offset_marker       = 'lank_smpl_x'#'LAnkJnt_positionX'#'lank_smpl_x' #'ankleRightX'
 flag_filter         = True
+flag_rotate         = False # to Allign Theia and METRABS
+
+scale_factor = 1000
+# Connections for METRABS slmb
+conns = [[0,1],
+        [0,2],
+        [1,4],
+        [2,5],
+        [4,7],
+        [5,8],
+        [7,10],
+        [8,11],
+        [0,6],
+        [6,9],
+        [9,12],
+        [12,13],
+        [12,14],
+        [12,15],
+        [13,16],
+        [14,17],
+        [16,18],
+        [17,19],
+        [18,20],
+        [19,21],
+        [20,22],
+        [21,23]]
+# Connections for XSENS
+# conns = [[0,1],
+        #  [1,2],
+        #  [2,3],
+        #  [3,4],
+        #  [4,5],
+        #  [5,6],
+        #  [4,7],
+        #  [7,8],
+        #  [8,9],
+        #  [9,10],
+        #  [4,11],
+        #  [11,12],
+        #  [12,13],
+        #  [13,14],
+        #  [0,15],
+        #  [15,16],
+        #  [16,17],
+        #  [17,18],
+        #  [0,19],
+        #  [19,20],
+        #  [20,21],
+        #  [21,22]]
+n_cons = conns.__len__()
 
 # Filtering            
 f_order = 4
@@ -28,7 +79,7 @@ f_nyquist = f_cutoff/(f_sampling/2)
 b, a = signal.butter(f_order, f_nyquist, btype='lowpass', analog = False)
 
 # Where to read data from
-data_path = '../Study_Validation/Out/metrabs/' #'../Study_Validation/In/Kinect/' #'./Out/Data/HPC_tests/'
+data_path = '../Study_ACL/Out/' #'../Study_Erin_spine/Out/metrabs/SP1002/' #'../Study_Validation/Out/metrabs/' # #'./Out/Data/HPC_tests/'
 
 # Check if ./Figures/ path exists if not make folder
 if not os.path.exists(data_path + 'Figures/'):
@@ -47,7 +98,8 @@ for csv_file in csv_files:
             trial_name = data_path + csv_file
 
             data_xyz = pd.read_csv(trial_name)
-            data_xyz = data_xyz.drop(columns='Unnamed: 0')
+            data_xyz = data_xyz.drop(columns='Unnamed: 0') # 'Unnamed: 0'
+            data_headers = data_xyz.columns
 
             # TO np.array
             pose_xyz = np.array(data_xyz, dtype='float')
@@ -69,19 +121,26 @@ for csv_file in csv_files:
             # Remove offset
             if flag_remOffset == True:
                 # Create copy of matrix object otherwise it will follow what is happening to the object
-                pose_off = np.copy(pose_xyz[:,30:33])
+                idx_offset_marker = data_xyz.columns.get_loc(offset_marker)
+                pose_off = np.copy(pose_xyz[:,idx_offset_marker:idx_offset_marker+3])
                 # pose_x_off = np.average(pose_x, axis = 1)
                 pose_off.shape = [n_frames,3]
                 for i_col in range(int(n_markers/3)):
                     pose_xyz[:,i_col*3:i_col*3+3] = pose_xyz[:,i_col*3:i_col*3+3] - pose_off
                 
-                
+            # Apply manual rotation (allign Theia and inference)
+            if flag_rotate == True:
+                r_mat = R.from_rotvec(np.pi/5 * np.array([0, 0, 1])) 
+                for i_marker in range(0,30):
+                    pose_xyz[:,3*i_marker:3*i_marker+3] = r_mat.apply(pose_xyz[:,3*i_marker:3*i_marker+3])   
 
             # Save out processed data
             out_xyz = pd.DataFrame(pose_xyz)
-            out_xyz.to_csv((data_path + csv_file[:-4] + '_pro.csv'))
+            out_xyz.to_csv((data_path + csv_file[:-4] + '_pro.csv'), header = data_headers)
 
+            
             # Split
+            pose_xyz=pose_xyz * scale_factor
             pose_x = pose_xyz[:,0::3]         
             pose_y = pose_xyz[:,1::3]       
             pose_z = pose_xyz[:,2::3]
@@ -195,6 +254,7 @@ for csv_file in csv_files:
                 ax.plot([0,200], [0,0], [0,0],color = 'red')
                 ax.plot([0,0], [0,200], [0,0],color = 'green')
                 ax.plot([0,0], [0,0], [0,200],color = 'blue')
+                ax.scatter(0, 0, 0, c = 'red', s = 15, marker = 'o')
                 
                 # Update position of segments points
                 x = pose_x[i, :]
@@ -233,6 +293,10 @@ for csv_file in csv_files:
                 ax.set_zlim(z_min + 0.1*z_min, z_max + 0.1*z_max)
                 ax.set_aspect('equal')
                 ax.grid(False)   
+
+                # Draw connections
+                for i_conn in range(0, n_cons):
+                    ax.plot([x[conns[i_conn][0]], x[conns[i_conn][1]]], [y[conns[i_conn][0]],y[conns[i_conn][1]]], [z[conns[i_conn][0]], z[conns[i_conn][1]]],color = 'green')
                 
             fig = plt.figure(dpi=100)
             fig.set_figheight(9.6)
@@ -240,7 +304,7 @@ for csv_file in csv_files:
             ax = fig.add_subplot(projection='3d')
             
             # Create .git animation
-            fig_name = csv_file[0:-4] + '_lp1_4order_offToe'
+            fig_name = csv_file[0:-4] #+ '_lp1_4order_offToe'
             
             ani = animation.FuncAnimation(fig = fig, func = update, frames = n_frames, interval = 1, repeat = False)
             writer = animation.PillowWriter(fps = f_sampling,
