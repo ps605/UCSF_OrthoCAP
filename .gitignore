@@ -1,8 +1,8 @@
-*.DS_Store
-video_data/
+**/.DS_Store
+video_data/**
 token.txt
 *.mov
-In/
-Out/
+In/**
+Out/**
 metrabs_eff2l_y4_384px_800k_28ds/
 
