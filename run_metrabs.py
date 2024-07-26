@@ -8,6 +8,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import Rectangle
 import pandas as pd
 import os
+import datetime
 
 ## INFORMATION
 # This script will run the METRABS (https://github.com/isarandi/metrabs) 3D HPE algorithm of videos.
@@ -50,7 +51,7 @@ def plot_results(image, pred, joint_names, joint_edges):
     poses3d[..., 1], poses3d[..., 2] = poses3d[..., 2], -poses3d[..., 1]
     pose_ax.scatter(poses3d[:, 0], poses3d[:, 1], poses3d[:, 2], c = 'red', s = 15, marker = 'o')
  
-
+## SETUP
 # Load METRABS model. It does not seem to like relative paths so keep the path absolute when loading the METRABS model. Takes about 3 minutes
 model = hub.load('/Users/orthocap_01/Documents/Research/UCSF/Development/Motion_Tracking/metrabs_eff2l_y4_384px_800k_28ds')
 
@@ -60,7 +61,7 @@ out_data_path = '../Study_ACL/Out/'
 # Video format (.MOV, .AVI etc.). ! NOTE .MOV prefferable.
 video_format = '.MOV'
 # This can be changed (https://github.com/isarandi/metrabs/blob/master/docs/API.md#skeleton-conventions). ! NOTE check plotting in animation_script.py as keypoiints will change
-keypoint_model = 'smpl+head_30'
+keypoint_model = 'kinectv2_25' #'smpl+head_30'
 
 # Check if ./Figures/ path exists if not make folder
 if not os.path.exists(out_data_path):
@@ -73,11 +74,13 @@ for video_file in video_files:
     if video_file.endswith(video_format):
         # Open .txt file to log information from processing
         log_file = open(out_data_path + video_file[:-4] + '_log.txt', 'w')
-        log_file.write('METRABS 3D skeleton model used: ' + keypoint_model + '\n')
+        log_file.write(str(datetime.datetime.now()) + ': METRABS 3D skeleton model used: ' + keypoint_model + '\n')
 
         # Get joint (ie keypoint) names and connection frame
         joint_names = model.per_skeleton_joint_names[keypoint_model].numpy().astype(str)
         joint_edges = model.per_skeleton_joint_edges[keypoint_model].numpy()
+        # Save out joint edges to use in animation later
+        np.savetxt(out_data_path + video_file[:-4]  + '_edges.txt', joint_edges)
 
         # Expand joint names to _x _y and _z 
         joint_names_xyz = []
@@ -92,6 +95,7 @@ for video_file in video_files:
 
         # Initialise variables 
         n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        log_file.write(str(datetime.datetime.now()) + ': Total video frames: ' + str(n_frames) + '\n')
         n_keypoints = np.size(joint_names)        
         i_frame = 0
 
@@ -109,8 +113,8 @@ for video_file in video_files:
             
             # Exit if no frame returned (workaround for capture open afer final frame)
             if frame is None:
-                print('CAUTION: No read: ' + video_file + ' frame: ' + str(i_frame) + '. Moved to next frame.')
-                log_file.write('CAUTION: No read: ' + video_file + ' frame: ' + str(i_frame) + '. Moved to next frame.\n')
+                print(str(datetime.datetime.now()) + ': CAUTION: No read: ' + out_data_path + video_file + ' frame: ' + str(i_frame) + '. Moved to next frame.')
+                log_file.write(str(datetime.datetime.now()) + ': CAUTION: No read: ' +out_data_path +  video_file + ' frame: ' + str(i_frame) + '. Moved to next frame.\n')
                 i_frame = i_frame + 1
                 break
 
@@ -129,8 +133,8 @@ for video_file in video_files:
 
             # Check if no detection then skip loop
             if poses3d.size == 0:
-                print('CAUTION: No detection: ' + video_file + ' frame: ' + str(i_frame) + '. Moving to next frame.')
-                log_file.write('CAUTION: No detection: ' + video_file + ' frame: ' + str(i_frame) + '. Moving to next frame.\n')
+                print(str(datetime.datetime.now()) + 'CAUTION: No detection: ' + video_file + ' frame: ' + str(i_frame) + '. Moving to next frame.')
+                log_file.write(str(datetime.datetime.now()) + 'CAUTION: No detection: ' + video_file + ' frame: ' + str(i_frame) + '. Moving to next frame.\n')
                 i_frame = i_frame + 1
                 continue
             
@@ -184,6 +188,6 @@ for video_file in video_files:
         out_z = pd.DataFrame(pose_z)
         out_z.to_csv((out_data_path + video_file[:-4]  + '_3DTracked_z.csv'), header = joint_names)
 
-        print('3D pose estimation complete for: ' + out_data_path + video_file[:-4]  + '_3DTracked.csv')
-        log_file.write('3D pose estimation complete for: ' + out_data_path + video_file[:-4]  + '_3DTracked.csv\n')
+        print(str(datetime.datetime.now()) + '3D pose estimation complete for: ' + out_data_path + video_file[:-4]  + '_3DTracked.csv')
+        log_file.write(str(datetime.datetime.now()) + '3D pose estimation complete for: ' + out_data_path + video_file[:-4]  + '_3DTracked.csv\n')
         log_file.close()

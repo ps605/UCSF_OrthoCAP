@@ -10,7 +10,7 @@ import os
 
 
 # Parameters and flags
-data_path = './video_data/' 
+data_path = '../Study_ACL/In/' 
 confidence_threshold = 0.3
 video_files = os.listdir(data_path)
 
@@ -160,14 +160,14 @@ def resizeWithPad(image: np.array,
 
 # Loop through videos 
 for video_file in video_files:
-    if video_file.endswith('.MP4'):
+    if video_file.endswith('.MOV'):
         
         video_name = video_file[:-4]
 
         # Image handling and pose detection
-        cap = cv2.VideoCapture(('./video_data/' +  video_name + '.mp4')) 
-        out_vid = cv2.VideoWriter(('./video_data/' + video_name + '_tracked.avi'), cv2.VideoWriter_fourcc('M','J','P','G'), 30, (720, 1280))
-        out_vid_256 = cv2.VideoWriter(('./video_data/' + video_name + '_256_tracked.avi'), cv2.VideoWriter_fourcc('M','J','P','G'), 30, (256, 256))
+        cap = cv2.VideoCapture((data_path +  video_name + '.mov')) 
+        out_vid = cv2.VideoWriter((data_path + video_name + '_tracked.avi'), cv2.VideoWriter_fourcc('M','J','P','G'), 30, (720, 1280))
+        out_vid_256 = cv2.VideoWriter((data_path + video_name + '_256_tracked.avi'), cv2.VideoWriter_fourcc('M','J','P','G'), 30, (256, 256))
 
         n_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
@@ -230,7 +230,7 @@ for video_file in video_files:
         kp = np.array(kp)
         kp_filt = signal.filtfilt(b, a, kp, axis=2)
 
-        cap = cv2.VideoCapture(('./video_data/' +  video_name + '.mp4')) 
+        cap = cv2.VideoCapture((data_path +  video_name + '.mov')) 
         i_frame = 0
         while cap.isOpened():
         
@@ -259,33 +259,33 @@ for video_file in video_files:
         out_vid_256.release()
         cv2.destroyAllWindows()
 
-        # Plot the x vs y vs frame data
-        fig1 = plt
+        # # Plot the x vs y vs frame data
+        # fig1 = plt
 
-        for i_kp in [5, 6, 11, 12, 13, 14, 15, 16]:
-            fig1.scatter(x=keypoint_data_y[i_kp,:]*256, y=keypoint_data_x[i_kp,:]*-256, c=keypoint_data_t, cmap='jet', s=10, alpha=0.25)
+        # for i_kp in [5, 6, 11, 12, 13, 14, 15, 16]:
+        #     fig1.scatter(x=keypoint_data_y[i_kp,:]*256, y=keypoint_data_x[i_kp,:]*-256, c=keypoint_data_t, cmap='jet', s=10, alpha=0.25)
 
-        fig1.title('Joints')
-        fig1.xlabel('Pixel (#)')
-        fig1.ylabel('Pixel (#)')
-        fig1.xlim(0,256)
-        fig1.ylim(-256, 0)
-        fig1.colorbar(label='Frame Number', orientation='vertical')
+        # fig1.title('Joints')
+        # fig1.xlabel('Pixel (#)')
+        # fig1.ylabel('Pixel (#)')
+        # fig1.xlim(0,256)
+        # fig1.ylim(-256, 0)
+        # fig1.colorbar(label='Frame Number', orientation='vertical')
 
-        fig1.savefig('./Out/Figures/' + video_name + '_joint_xyvst.png')
+        # fig1.savefig('./Out/Figures/' + video_name + '_joint_xyvst.png')
 
-        # Save out data as .csv files
-        out_headers = pd.DataFrame(np.transpose(keypoint_names))
-        out_headers.to_csv(('./Out/Data/' + video_name + '_tracked_headers.csv'))
+        # # Save out data as .csv files
+        # out_headers = pd.DataFrame(np.transpose(keypoint_names))
+        # out_headers.to_csv(('./Out/Data/' + video_name + '_tracked_headers.csv'))
 
-        out_x = pd.DataFrame(np.transpose(keypoint_data_x))
-        out_x.to_csv(('./Out/Data/' + video_name + '_tracked_x.csv'))
+        # out_x = pd.DataFrame(np.transpose(keypoint_data_x))
+        # out_x.to_csv(('./Out/Data/' + video_name + '_tracked_x.csv'))
 
-        out_y = pd.DataFrame(np.transpose(keypoint_data_y))
-        out_y.to_csv(('./Out/Data/' + video_name + '_tracked_y.csv'))
+        # out_y = pd.DataFrame(np.transpose(keypoint_data_y))
+        # out_y.to_csv(('./Out/Data/' + video_name + '_tracked_y.csv'))
 
-        out_c = pd.DataFrame(np.transpose(keypoint_data_c))
-        out_c.to_csv(('./Out/Data/' + video_name + '_tracked_c.csv'))
+        # out_c = pd.DataFrame(np.transpose(keypoint_data_c))
+        # out_c.to_csv(('./Out/Data/' + video_name + '_tracked_c.csv'))
 
-        out_t = pd.DataFrame(np.transpose(keypoint_data_t))
-        out_t.to_csv(('./Out/Data/' + video_name + '_tracked_t.csv'))
+        # out_t = pd.DataFrame(np.transpose(keypoint_data_t))
+        # out_t.to_csv(('./Out/Data/' + video_name + '_tracked_t.csv'))

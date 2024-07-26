@@ -10,42 +10,48 @@ import pandas as pd
 import matplotlib.cm as cm
 import os
 
-# SETUP
+## INFORMATION
+# This script is to visualise 3D HPE (Human Pose Estimation) in 3D space. It can handle input as XYZ 3D positional coordinates from any output system (e.g. mocap, IMU) as long as they are saved as
+# they are in a matrix format of frames x keypoints (<keypoint_1>_x, <keypoint_1>_y, <keypoint_1>_z, <keypoint_2>_x, ... <keypoint_n>_z) 
+
+## SETUP
 plt.ioff()
-# plt.style.use('dark_background')
+plt.style.use('dark_background')
 
 flag_seperateXYZ    = True
 flag_makeGIF        = True
 flag_midShldrPevlis = False
 flag_remOffset      = True
-offset_marker       = 'lank_smpl_x'#'LAnkJnt_positionX'#'lank_smpl_x' #'ankleRightX'
-flag_filter         = True
+offset_marker       = 'rfoo_x' #lank_smpl_x'#'LAnkJnt_positionX'#'lank_smpl_x' #'ankleRightX'
+flag_filter         = False
 flag_rotate         = False # to Allign Theia and METRABS
 
 scale_factor = 1000
+
+
 # Connections for METRABS slmb
-conns = [[0,1],
-        [0,2],
-        [1,4],
-        [2,5],
-        [4,7],
-        [5,8],
-        [7,10],
-        [8,11],
-        [0,6],
-        [6,9],
-        [9,12],
-        [12,13],
-        [12,14],
-        [12,15],
-        [13,16],
-        [14,17],
-        [16,18],
-        [17,19],
-        [18,20],
-        [19,21],
-        [20,22],
-        [21,23]]
+# conns = [[0,1],
+        # [0,2],
+        # [1,4],
+        # [2,5],
+        # [4,7],
+        # [5,8],
+        # [7,10],
+        # [8,11],
+        # [0,6],
+        # [6,9],
+        # [9,12],
+        # [12,13],
+        # [12,14],
+        # [12,15],
+        # [13,16],
+        # [14,17],
+        # [16,18],
+        # [17,19],
+        # [18,20],
+        # [19,21],
+        # [20,22],
+        # [21,23]]
 # Connections for XSENS
 # conns = [[0,1],
         #  [1,2],
@@ -69,7 +75,7 @@ conns = [[0,1],
         #  [19,20],
         #  [20,21],
         #  [21,22]]
-n_cons = conns.__len__()
+# n_cons = conns.__len__()
 
 # Filtering            
 f_order = 4
@@ -294,7 +300,10 @@ for csv_file in csv_files:
                 ax.set_aspect('equal')
                 ax.grid(False)   
 
-                # Draw connections
+                # Load and draw connections
+                conns = np.loadtxt(data_path + csv_file[:-14] + '_edges.txt', dtype=int)
+                n_cons = conns.__len__()
+
                 for i_conn in range(0, n_cons):
                     ax.plot([x[conns[i_conn][0]], x[conns[i_conn][1]]], [y[conns[i_conn][0]],y[conns[i_conn][1]]], [z[conns[i_conn][0]], z[conns[i_conn][1]]],color = 'green')
                 
